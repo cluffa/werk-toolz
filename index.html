@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Werk Toolz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <nav class="sidebar">
+      <h1 class="brand">Werk Toolz</h1>
+      <ul class="tool-list">
+        <li><button class="tool-nav-btn active" data-tool="search-string">Search String</button></li>
+      </ul>
+    </nav>
+
+    <main class="content">
+      <section id="tool-search-string" class="tool-panel active">
+        <header class="tool-header">
+          <h2>Search String Builder</h2>
+          <p class="tool-desc">
+            Enter a Personal, Business, and Number value per row. Every value gets expanded
+            into its common variants (plain, <code>T</code>-prefixed, and
+            <code>{dashed}</code>) and combined into one <strong>OR</strong>-joined search string.
+          </p>
+        </header>
+
+        <div class="toolbar">
+          <button id="add-row-btn" type="button">+ Add Row</button>
+          <button id="clear-rows-btn" type="button" class="secondary">Clear All</button>
+          <label class="quote-toggle">
+            <input type="checkbox" id="quote-toggle" />
+            Wrap each term in quotes
+          </label>
+        </div>
+
+        <div class="sheet-wrapper">
+          <table class="sheet">
+            <thead>
+              <tr>
+                <th class="row-num-col"></th>
+                <th>Personal</th>
+                <th>Business</th>
+                <th>Number</th>
+                <th class="row-action-col"></th>
+              </tr>
+            </thead>
+            <tbody id="sheet-body">
+              <!-- rows injected by app.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="output-section">
+          <div class="output-header">
+            <label for="output-string">Search String</label>
+            <button id="copy-btn" type="button">Copy</button>
+          </div>
+          <textarea id="output-string" readonly rows="6" placeholder="Fill in the sheet above to build your search string..."></textarea>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

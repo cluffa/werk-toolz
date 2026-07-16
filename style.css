@@ -1,0 +1,266 @@
+:root {
+  --border: #d0d3d8;
+  --header-bg: #f1f3f5;
+  --row-alt: #fafbfc;
+  --accent: #1a73e8;
+  --accent-dark: #1558b0;
+  --text: #202124;
+  --muted: #5f6368;
+  --danger: #c5221f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+  background: #ffffff;
+}
+
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--header-bg);
+  border-right: 1px solid var(--border);
+  padding: 20px 12px;
+}
+
+.brand {
+  font-size: 18px;
+  margin: 0 0 16px 8px;
+}
+
+.tool-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tool-nav-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.tool-nav-btn:hover {
+  background: #e8eaed;
+}
+
+.tool-nav-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.content {
+  flex: 1;
+  padding: 28px 36px;
+  max-width: 980px;
+}
+
+.tool-panel {
+  display: none;
+}
+
+.tool-panel.active {
+  display: block;
+}
+
+.tool-header h2 {
+  margin: 0 0 6px;
+}
+
+.tool-desc {
+  color: var(--muted);
+  max-width: 640px;
+  line-height: 1.4;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 10px;
+}
+
+.toolbar button {
+  padding: 8px 14px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.toolbar button:hover {
+  background: var(--accent-dark);
+}
+
+.toolbar button.secondary {
+  background: #fff;
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.toolbar button.secondary:hover {
+  background: var(--header-bg);
+}
+
+.quote-toggle {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.sheet-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+table.sheet {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+}
+
+table.sheet th,
+table.sheet td {
+  border: 1px solid var(--border);
+  padding: 0;
+}
+
+table.sheet thead th {
+  background: var(--header-bg);
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+table.sheet .row-num-col {
+  width: 36px;
+}
+
+table.sheet .row-action-col {
+  width: 40px;
+}
+
+table.sheet tbody tr:nth-child(even) {
+  background: var(--row-alt);
+}
+
+.row-num {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  user-select: none;
+}
+
+table.sheet td input[type="text"] {
+  width: 100%;
+  border: none;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: transparent;
+  outline-offset: -2px;
+}
+
+table.sheet td input[type="text"]:focus {
+  outline: 2px solid var(--accent);
+  background: #fff;
+}
+
+.delete-row-btn {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px;
+}
+
+.delete-row-btn:hover {
+  color: var(--danger);
+  background: #fdecea;
+}
+
+.output-section {
+  margin-top: 22px;
+}
+
+.output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.output-header label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+#copy-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+#copy-btn:hover {
+  background: var(--header-bg);
+}
+
+#copy-btn.copied {
+  border-color: #188038;
+  color: #188038;
+}
+
+#output-string {
+  width: 100%;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .app {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .content {
+    padding: 20px;
+  }
+}
