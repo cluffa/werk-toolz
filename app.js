@@ -59,19 +59,19 @@
   }
 
   function renderCol(name) {
-    const entries  = cols[name];
-    const container = document.getElementById(`col-rows-${name}`);
-    container.innerHTML = "";
+    const entries = cols[name];
+    const tbody   = document.getElementById(`col-rows-${name}`);
+    tbody.innerHTML = "";
 
     entries.forEach((entry, idx) => {
-      const row = document.createElement("div");
-      row.className = "col-row";
+      const tr = document.createElement("tr");
 
-      const num = document.createElement("span");
-      num.className = "col-row-num";
-      num.textContent = idx + 1;
-      row.appendChild(num);
+      const numTd = document.createElement("td");
+      numTd.className = "row-num";
+      numTd.textContent = idx + 1;
+      tr.appendChild(numTd);
 
+      const td = document.createElement("td");
       const input = document.createElement("input");
       input.type = "text";
       input.autocomplete = "off";
@@ -99,8 +99,10 @@
         render();
       });
 
-      row.appendChild(input);
+      td.appendChild(input);
+      tr.appendChild(td);
 
+      const actionTd = document.createElement("td");
       const del = document.createElement("button");
       del.type = "button";
       del.className = "delete-row-btn";
@@ -111,9 +113,10 @@
         if (entries.length === 0) entries.push(makeEntry());
         render();
       });
-      row.appendChild(del);
+      actionTd.appendChild(del);
+      tr.appendChild(actionTd);
 
-      container.appendChild(row);
+      tbody.appendChild(tr);
     });
   }
 

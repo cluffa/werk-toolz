@@ -16,7 +16,7 @@
       </ul>
       <button id="download-btn" class="download-btn" type="button">Export HTML</button>
       <div class="local-badge">Local only</div>
-      <div class="version-label">v1.1.0</div>
+      <div class="version-label">v1.1.1</div>
     </nav>
 
     <main class="content">
@@ -39,20 +39,26 @@
         </div>
 
         <div class="columns-layout">
-          <div class="col-panel">
-            <div class="col-panel-header">Personal</div>
-            <div class="col-rows" id="col-rows-personal"></div>
-            <button class="col-add-btn" data-col="personal" type="button">+ Add</button>
+          <div class="sheet-wrapper">
+            <table class="sheet">
+              <thead><tr><th class="row-num-col"></th><th>Personal</th><th class="row-action-col"></th></tr></thead>
+              <tbody id="col-rows-personal"></tbody>
+              <tfoot><tr><td colspan="3" class="col-add-cell"><button class="col-add-btn" data-col="personal" type="button">+ Add</button></td></tr></tfoot>
+            </table>
           </div>
-          <div class="col-panel">
-            <div class="col-panel-header">Business</div>
-            <div class="col-rows" id="col-rows-business"></div>
-            <button class="col-add-btn" data-col="business" type="button">+ Add</button>
+          <div class="sheet-wrapper">
+            <table class="sheet">
+              <thead><tr><th class="row-num-col"></th><th>Business</th><th class="row-action-col"></th></tr></thead>
+              <tbody id="col-rows-business"></tbody>
+              <tfoot><tr><td colspan="3" class="col-add-cell"><button class="col-add-btn" data-col="business" type="button">+ Add</button></td></tr></tfoot>
+            </table>
           </div>
-          <div class="col-panel">
-            <div class="col-panel-header">Number</div>
-            <div class="col-rows" id="col-rows-number"></div>
-            <button class="col-add-btn" data-col="number" type="button">+ Add</button>
+          <div class="sheet-wrapper">
+            <table class="sheet">
+              <thead><tr><th class="row-num-col"></th><th>Number</th><th class="row-action-col"></th></tr></thead>
+              <tbody id="col-rows-number"></tbody>
+              <tfoot><tr><td colspan="3" class="col-add-cell"><button class="col-add-btn" data-col="number" type="button">+ Add</button></td></tr></tfoot>
+            </table>
           </div>
         </div>
 
