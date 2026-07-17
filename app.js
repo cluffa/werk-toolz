@@ -242,33 +242,39 @@ document.getElementById("download-btn").addEventListener("click", async function
   try {
     var html;
     if (document.documentElement.dataset.singleFile) {
-      // Already a single file — just re-save the current document.
       html = "<!doctype html>\n" + document.documentElement.outerHTML;
     } else {
-      const [htmlText, cssText, jsText] = await Promise.all([
-        fetch("index.html").then((r) => r.text()),
+      const [cssText, jsText] = await Promise.all([
         fetch("style.css").then((r) => r.text()),
         fetch("app.js").then((r) => r.text()),
       ]);
-      html = htmlText
-        .replace('<html lang="en">', '<html lang="en" data-single-file="1">')
-        .replace(
-          '<link rel="stylesheet" href="style.css" />',
-          '<style id="bundled-style">\n' + cssText + "\n</style>"
-        )
-        .replace(
-          '<script src="app.js"></script>',
-          '<script id="bundled-script">\n' + jsText + "\n</script>"
-        );
+      // Clone the live DOM and swap the external link/script for inline equivalents.
+      const root = document.documentElement.cloneNode(true);
+      root.setAttribute("data-single-file", "1");
+
+      const style = document.createElement("style");
+      style.id = "bundled-style";
+      style.textContent = cssText;
+      root.querySelector('link[href="style.css"]').replaceWith(style);
+
+      const script = document.createElement("script");
+      script.id = "bundled-script";
+      script.textContent = jsText;
+      root.querySelector('script[src="app.js"]').replaceWith(script);
+
+      html = "<!doctype html>\n" + root.outerHTML;
     }
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = "werk-toolz.html";
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   } catch (e) {
+    console.error("Download failed:", e);
     btn.textContent = "Failed";
     setTimeout(function () {
       btn.textContent = "Download";
