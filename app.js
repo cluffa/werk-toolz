@@ -1,61 +1,34 @@
 (function () {
   "use strict";
 
-  // Data lives in memory only (never persisted) since rows can hold sensitive
-  // identifiers/account numbers.
-  let rows = [];
+  const cols = { personal: [], business: [], number: [] };
   let nextId = 1;
 
-  const sheetBody = document.getElementById("sheet-body");
-  const output = document.getElementById("output-string");
-  const addRowBtn = document.getElementById("add-row-btn");
-  const clearRowsBtn = document.getElementById("clear-rows-btn");
-  const copyBtn = document.getElementById("copy-btn");
-  const quoteToggle = document.getElementById("quote-toggle");
+  function makeEntry(value) { return { id: nextId++, value: value || "" }; }
 
-  function makeRow() {
-    return { id: nextId++, personal: "", business: "", number: "" };
+  function initCols() {
+    cols.personal = [makeEntry(), makeEntry(), makeEntry()];
+    cols.business = [makeEntry(), makeEntry(), makeEntry()];
+    cols.number   = [makeEntry(), makeEntry(), makeEntry()];
   }
 
-  function addRow() {
-    rows.push(makeRow());
-    render();
+  function digitsOnly(v) { return (v || "").replace(/\D/g, ""); }
+
+  function formatPersonal(d) {
+    if (d.length !== 9) return null;
+    return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
   }
 
-  function removeRow(id) {
-    rows = rows.filter((r) => r.id !== id);
-    if (rows.length === 0) rows.push(makeRow());
-    render();
-  }
-
-  function clearAll() {
-    rows = [makeRow()];
-    render();
-  }
-
-  function digitsOnly(value) {
-    return (value || "").replace(/\D/g, "");
-  }
-
-  // SSN-style: XXX-XX-XXXX
-  function formatPersonal(digits) {
-    if (digits.length !== 9) return null;
-    return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
-  }
-
-  // EIN-style: XX-XXXXXXX
-  function formatBusiness(digits) {
-    if (digits.length !== 9) return null;
-    return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+  function formatBusiness(d) {
+    if (d.length !== 9) return null;
+    return `${d.slice(0, 2)}-${d.slice(2)}`;
   }
 
   function tinVariants(rawValue, formatter) {
     const raw = (rawValue || "").trim();
     if (!raw) return [];
-
     const digits = digitsOnly(raw);
     if (!digits) return [raw];
-
     const variants = [digits, `T${digits}`];
     const formatted = formatter(digits);
     variants.push(formatted ? `{${formatted}}` : `{${digits}}`);
@@ -67,97 +40,105 @@
     return raw ? [raw] : [];
   }
 
+  const output      = document.getElementById("output-string");
+  const copyBtn     = document.getElementById("copy-btn");
+  const clearBtn    = document.getElementById("clear-rows-btn");
+  const quoteToggle = document.getElementById("quote-toggle");
+
   function buildOutput() {
-    const wrapInQuotes = quoteToggle.checked;
+    const wrap = quoteToggle.checked;
     const seen = new Set();
     const terms = [];
-
-    rows.forEach((row) => {
-      const all = [
-        ...tinVariants(row.personal, formatPersonal),
-        ...tinVariants(row.business, formatBusiness),
-        ...numberVariants(row.number),
-      ];
-      all.forEach((term) => {
-        if (!seen.has(term)) {
-          seen.add(term);
-          terms.push(wrapInQuotes ? `"${term}"` : term);
-        }
-      });
+    const add = (list) => list.forEach((t) => {
+      if (!seen.has(t)) { seen.add(t); terms.push(wrap ? `"${t}"` : t); }
     });
-
+    cols.personal.forEach((e) => add(tinVariants(e.value, formatPersonal)));
+    cols.business.forEach((e) => add(tinVariants(e.value, formatBusiness)));
+    cols.number.forEach((e)   => add(numberVariants(e.value)));
     output.value = terms.join(" OR ");
   }
 
-  function render() {
-    sheetBody.innerHTML = "";
+  function renderCol(name) {
+    const entries  = cols[name];
+    const container = document.getElementById(`col-rows-${name}`);
+    container.innerHTML = "";
 
-    rows.forEach((row, index) => {
-      const tr = document.createElement("tr");
+    entries.forEach((entry, idx) => {
+      const row = document.createElement("div");
+      row.className = "col-row";
 
-      const numTd = document.createElement("td");
-      numTd.className = "row-num";
-      numTd.textContent = String(index + 1);
-      tr.appendChild(numTd);
+      const num = document.createElement("span");
+      num.className = "col-row-num";
+      num.textContent = idx + 1;
+      row.appendChild(num);
 
-      ["personal", "business", "number"].forEach((field) => {
-        const td = document.createElement("td");
-        const input = document.createElement("input");
-        input.type = "text";
-        input.autocomplete = "off";
-        input.spellcheck = false;
-        input.value = row[field];
-        input.addEventListener("input", (e) => {
-          row[field] = e.target.value;
-          buildOutput();
-        });
-        input.addEventListener("paste", (e) => {
-          const text = (e.clipboardData || window.clipboardData).getData("text");
-          const parts = text.split(/\r?\n/);
-          while (parts.length > 1 && parts[parts.length - 1].trim() === "") parts.pop();
-          if (parts.length <= 1) return;
-          e.preventDefault();
-          const rowIndex = rows.indexOf(row);
-          parts.forEach((val, i) => {
-            if (rowIndex + i < rows.length) {
-              rows[rowIndex + i][field] = val;
-            } else {
-              const r = makeRow();
-              r[field] = val;
-              rows.push(r);
-            }
-          });
-          render();
-        });
-        td.appendChild(input);
-        tr.appendChild(td);
+      const input = document.createElement("input");
+      input.type = "text";
+      input.autocomplete = "off";
+      input.spellcheck = false;
+      input.value = entry.value;
+
+      input.addEventListener("input", (e) => {
+        entry.value = e.target.value;
+        buildOutput();
       });
 
-      const actionTd = document.createElement("td");
-      const delBtn = document.createElement("button");
-      delBtn.type = "button";
-      delBtn.className = "delete-row-btn";
-      delBtn.textContent = "×";
-      delBtn.title = "Delete row";
-      delBtn.addEventListener("click", () => removeRow(row.id));
-      actionTd.appendChild(delBtn);
-      tr.appendChild(actionTd);
+      input.addEventListener("paste", (e) => {
+        const text = (e.clipboardData || window.clipboardData).getData("text");
+        const parts = text.split(/\r?\n/);
+        while (parts.length > 1 && parts[parts.length - 1].trim() === "") parts.pop();
+        if (parts.length <= 1) return;
+        e.preventDefault();
+        parts.forEach((val, i) => {
+          if (idx + i < entries.length) {
+            entries[idx + i].value = val;
+          } else {
+            entries.push(makeEntry(val));
+          }
+        });
+        render();
+      });
 
-      sheetBody.appendChild(tr);
+      row.appendChild(input);
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "delete-row-btn";
+      del.textContent = "×";
+      del.title = "Delete row";
+      del.addEventListener("click", () => {
+        entries.splice(idx, 1);
+        if (entries.length === 0) entries.push(makeEntry());
+        render();
+      });
+      row.appendChild(del);
+
+      container.appendChild(row);
     });
+  }
 
+  function render() {
+    renderCol("personal");
+    renderCol("business");
+    renderCol("number");
     buildOutput();
   }
 
-  addRowBtn.addEventListener("click", addRow);
-  clearRowsBtn.addEventListener("click", clearAll);
+  document.querySelectorAll(".col-add-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      cols[btn.dataset.col].push(makeEntry());
+      render();
+    });
+  });
+
+  clearBtn.addEventListener("click", () => { initCols(); render(); });
   quoteToggle.addEventListener("change", buildOutput);
 
   copyBtn.addEventListener("click", async () => {
     if (!output.value) return;
     try {
       await navigator.clipboard.writeText(output.value);
-    } catch (err) {
+    } catch {
       output.select();
       document.execCommand("copy");
     }
@@ -169,7 +150,7 @@
     }, 1200);
   });
 
-  rows.push(makeRow(), makeRow(), makeRow());
+  initCols();
   render();
 })();
 
