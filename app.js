@@ -262,6 +262,16 @@ document.getElementById("download-btn").addEventListener("click", async function
       script.textContent = jsText;
       root.querySelector('script[src="app.js"]').replaceWith(script);
 
+      // Replace the export button with a "Get Latest" link back to the live page.
+      const exportBtn = root.getElementById("download-btn");
+      const latestLink = document.createElement("a");
+      latestLink.href = window.location.href;
+      latestLink.textContent = "Get Latest";
+      latestLink.className = exportBtn.className;
+      latestLink.target = "_blank";
+      latestLink.rel = "noopener";
+      exportBtn.replaceWith(latestLink);
+
       html = "<!doctype html>\n" + root.outerHTML;
     }
     const blob = new Blob([html], { type: "text/html" });
