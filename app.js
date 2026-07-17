@@ -111,6 +111,22 @@
           row[field] = e.target.value;
           buildOutput();
         });
+        input.addEventListener("paste", (e) => {
+          const text = (e.clipboardData || window.clipboardData).getData("text");
+          const parts = text.split(/\r?\n/);
+          while (parts.length > 1 && parts[parts.length - 1].trim() === "") parts.pop();
+          if (parts.length <= 1) return;
+          e.preventDefault();
+          const rowIndex = rows.indexOf(row);
+          row[field] = parts[0];
+          const newRows = parts.slice(1).map((val) => {
+            const r = makeRow();
+            r[field] = val;
+            return r;
+          });
+          rows.splice(rowIndex + 1, 0, ...newRows);
+          render();
+        });
         td.appendChild(input);
         tr.appendChild(td);
       });
