@@ -184,7 +184,8 @@ document.querySelectorAll(".tool-nav-btn").forEach(function (btn) {
   });
 });
 
-// Show / hide source code — fetches files from disk so the viewer is always accurate
+// Show / hide source code
+// In single-file mode reads from bundled inline tags; otherwise fetches from server.
 document.querySelectorAll(".show-code-btn").forEach(function (btn) {
   btn.addEventListener("click", function () {
     var targetId = btn.dataset.target;
@@ -194,23 +195,33 @@ document.querySelectorAll(".show-code-btn").forEach(function (btn) {
 
     if (pre.hidden) {
       if (!codeEl.dataset.loaded) {
-        fetch(filename)
-          .then(function (r) { return r.text(); })
-          .then(function (text) {
-            codeEl.textContent = text;
-            codeEl.dataset.loaded = "1";
-          })
-          .catch(function () {
-            // Fallback for browsers that block file:// fetches (e.g. Safari)
-            if (filename === "index.html") {
-              codeEl.textContent = document.documentElement.outerHTML;
+        if (document.documentElement.dataset.singleFile) {
+          if (filename === "style.css") {
+            codeEl.textContent = document.getElementById("bundled-style").textContent;
+          } else if (filename === "app.js") {
+            codeEl.textContent = document.getElementById("bundled-script").textContent;
+          } else {
+            codeEl.textContent = document.documentElement.outerHTML;
+          }
+          codeEl.dataset.loaded = "1";
+        } else {
+          fetch(filename)
+            .then(function (r) { return r.text(); })
+            .then(function (text) {
+              codeEl.textContent = text;
               codeEl.dataset.loaded = "1";
-            } else {
-              codeEl.textContent =
-                "Source unavailable in this browser.\n" +
-                "Open via a local server, or use Ctrl+U / Cmd+U to view source.";
-            }
-          });
+            })
+            .catch(function () {
+              if (filename === "index.html") {
+                codeEl.textContent = document.documentElement.outerHTML;
+                codeEl.dataset.loaded = "1";
+              } else {
+                codeEl.textContent =
+                  "Source unavailable in this browser.\n" +
+                  "Open via a local server, or use Ctrl+U / Cmd+U to view source.";
+              }
+            });
+        }
       }
       pre.hidden = false;
       btn.textContent = "Hide Code";
@@ -221,4 +232,50 @@ document.querySelectorAll(".show-code-btn").forEach(function (btn) {
       btn.classList.remove("open");
     }
   });
+});
+
+// Download as single self-contained HTML file
+document.getElementById("download-btn").addEventListener("click", async function () {
+  const btn = this;
+  btn.textContent = "Building…";
+  btn.disabled = true;
+  try {
+    var html;
+    if (document.documentElement.dataset.singleFile) {
+      // Already a single file — just re-save the current document.
+      html = "<!doctype html>\n" + document.documentElement.outerHTML;
+    } else {
+      const [htmlText, cssText, jsText] = await Promise.all([
+        fetch("index.html").then((r) => r.text()),
+        fetch("style.css").then((r) => r.text()),
+        fetch("app.js").then((r) => r.text()),
+      ]);
+      html = htmlText
+        .replace('<html lang="en">', '<html lang="en" data-single-file="1">')
+        .replace(
+          '<link rel="stylesheet" href="style.css" />',
+          '<style id="bundled-style">\n' + cssText + "\n</style>"
+        )
+        .replace(
+          '<script src="app.js"></script>',
+          '<script id="bundled-script">\n' + jsText + "\n</script>"
+        );
+    }
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "werk-toolz.html";
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    btn.textContent = "Failed";
+    setTimeout(function () {
+      btn.textContent = "Download";
+      btn.disabled = false;
+    }, 2000);
+    return;
+  }
+  btn.textContent = "Download";
+  btn.disabled = false;
 });

@@ -265,6 +265,31 @@ table.sheet td input[type="text"]:focus {
   }
 }
 
+/* download button */
+.download-btn {
+  display: block;
+  width: calc(100% - 16px);
+  margin: 12px 8px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--muted);
+  text-align: left;
+}
+
+.download-btn:hover {
+  background: #e8eaed;
+  color: var(--text);
+}
+
+.download-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* local-only badge */
 .local-badge {
   margin: 16px 0 0 8px;
