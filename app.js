@@ -151,7 +151,58 @@
     }, 1200);
   });
 
-  // Seed with a few empty rows to start.
   rows.push(makeRow(), makeRow(), makeRow());
   render();
 })();
+
+// Nav switching
+document.querySelectorAll(".tool-nav-btn").forEach(function (btn) {
+  btn.addEventListener("click", function () {
+    var tool = btn.dataset.tool;
+    document.querySelectorAll(".tool-nav-btn").forEach(function (b) {
+      b.classList.toggle("active", b === btn);
+    });
+    document.querySelectorAll(".tool-panel").forEach(function (p) {
+      p.classList.toggle("active", p.id === "tool-" + tool);
+    });
+  });
+});
+
+// Show / hide source code — fetches files from disk so the viewer is always accurate
+document.querySelectorAll(".show-code-btn").forEach(function (btn) {
+  btn.addEventListener("click", function () {
+    var targetId = btn.dataset.target;
+    var filename = btn.dataset.file;
+    var pre = document.getElementById(targetId);
+    var codeEl = pre.querySelector("code");
+
+    if (pre.hidden) {
+      if (!codeEl.dataset.loaded) {
+        fetch(filename)
+          .then(function (r) { return r.text(); })
+          .then(function (text) {
+            codeEl.textContent = text;
+            codeEl.dataset.loaded = "1";
+          })
+          .catch(function () {
+            // Fallback for browsers that block file:// fetches (e.g. Safari)
+            if (filename === "index.html") {
+              codeEl.textContent = document.documentElement.outerHTML;
+              codeEl.dataset.loaded = "1";
+            } else {
+              codeEl.textContent =
+                "Source unavailable in this browser.\n" +
+                "Open via a local server, or use Ctrl+U / Cmd+U to view source.";
+            }
+          });
+      }
+      pre.hidden = false;
+      btn.textContent = "Hide Code";
+      btn.classList.add("open");
+    } else {
+      pre.hidden = true;
+      btn.textContent = "Show Code";
+      btn.classList.remove("open");
+    }
+  });
+});

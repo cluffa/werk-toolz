@@ -264,3 +264,77 @@ table.sheet td input[type="text"]:focus {
     padding: 20px;
   }
 }
+
+/* local-only badge */
+.local-badge {
+  margin: 16px 0 0 8px;
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #188038;
+  background: #e6f4ea;
+  border: 1px solid #b7dfbf;
+  border-radius: 20px;
+  padding: 2px 10px;
+  letter-spacing: 0.3px;
+}
+
+/* source panel */
+.source-block {
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.source-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--header-bg);
+}
+
+.source-filename {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.show-code-btn {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.show-code-btn:hover {
+  background: #e8eaed;
+  color: var(--text);
+}
+
+.show-code-btn.open {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.code-view {
+  margin: 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 520px;
+  background: #f8f9fa;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  tab-size: 2;
+}
+
+.code-view code {
+  white-space: pre;
+  display: block;
+}

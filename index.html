@@ -12,7 +12,9 @@
       <h1 class="brand">Werk Toolz</h1>
       <ul class="tool-list">
         <li><button class="tool-nav-btn active" data-tool="search-string">Search String</button></li>
+        <li><button class="tool-nav-btn" data-tool="source">View Source</button></li>
       </ul>
+      <div class="local-badge">Local only</div>
     </nav>
 
     <main class="content">
@@ -58,6 +60,40 @@
             <button id="copy-btn" type="button">Copy</button>
           </div>
           <textarea id="output-string" readonly rows="6" placeholder="Fill in the sheet above to build your search string..."></textarea>
+        </div>
+      </section>
+
+      <section id="tool-source" class="tool-panel">
+        <header class="tool-header">
+          <h2>Source Code</h2>
+          <p class="tool-desc">
+            This tool runs entirely in your browser — no server, no analytics, no network requests.
+            Nothing you enter leaves your device. Source is read directly from the local files on disk.
+          </p>
+        </header>
+
+        <div class="source-block">
+          <div class="source-block-header">
+            <span class="source-filename">index.html</span>
+            <button class="show-code-btn" data-file="index.html" data-target="src-html">Show Code</button>
+          </div>
+          <pre id="src-html" class="code-view" hidden><code></code></pre>
+        </div>
+
+        <div class="source-block">
+          <div class="source-block-header">
+            <span class="source-filename">app.js</span>
+            <button class="show-code-btn" data-file="app.js" data-target="src-js">Show Code</button>
+          </div>
+          <pre id="src-js" class="code-view" hidden><code></code></pre>
+        </div>
+
+        <div class="source-block">
+          <div class="source-block-header">
+            <span class="source-filename">style.css</span>
+            <button class="show-code-btn" data-file="style.css" data-target="src-css">Show Code</button>
+          </div>
+          <pre id="src-css" class="code-view" hidden><code></code></pre>
         </div>
       </section>
     </main>
