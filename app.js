@@ -118,13 +118,15 @@
           if (parts.length <= 1) return;
           e.preventDefault();
           const rowIndex = rows.indexOf(row);
-          row[field] = parts[0];
-          const newRows = parts.slice(1).map((val) => {
-            const r = makeRow();
-            r[field] = val;
-            return r;
+          parts.forEach((val, i) => {
+            if (rowIndex + i < rows.length) {
+              rows[rowIndex + i][field] = val;
+            } else {
+              const r = makeRow();
+              r[field] = val;
+              rows.push(r);
+            }
           });
-          rows.splice(rowIndex + 1, 0, ...newRows);
           render();
         });
         td.appendChild(input);
