@@ -290,6 +290,13 @@ table.sheet td input[type="text"]:focus {
   cursor: default;
 }
 
+/* version label */
+.version-label {
+  margin: 6px 0 0 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
 /* local-only badge */
 .local-badge {
   margin: 16px 0 0 8px;
