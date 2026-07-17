@@ -255,15 +255,15 @@ document.getElementById("download-btn").addEventListener("click", async function
       const style = document.createElement("style");
       style.id = "bundled-style";
       style.textContent = cssText;
-      root.querySelector('link[href="style.css"]').replaceWith(style);
+      root.querySelector('link[rel="stylesheet"]').replaceWith(style);
 
       const script = document.createElement("script");
       script.id = "bundled-script";
       script.textContent = jsText;
-      root.querySelector('script[src="app.js"]').replaceWith(script);
+      root.querySelector('script[src]').replaceWith(script);
 
       // Replace the export button with a "Get Latest" link back to the live page.
-      const exportBtn = root.getElementById("download-btn");
+      const exportBtn = root.querySelector("#download-btn");
       const latestLink = document.createElement("a");
       latestLink.href = window.location.href;
       latestLink.textContent = "Get Latest";
