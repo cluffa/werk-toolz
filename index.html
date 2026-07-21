@@ -22,7 +22,7 @@
       </ul>
       <button id="download-btn" class="download-btn" type="button">Export HTML</button>
       <div class="local-badge">Local only</div>
-      <div class="version-label">v1.4.0</div>
+      <div class="version-label">v1.4.1</div>
     </nav>
 
     <main class="content">
@@ -347,20 +347,46 @@
         </article>
 
         <article class="note-card">
-          <h3>Same, but over a dynamic list of file names</h3>
+          <h3>Same, but over a dynamic list of file names — real rows only</h3>
           <p class="note-desc">
             Loop over however many file names are in <code>A1:A10</code> (blank cells are
-            skipped, so leave spares), stack each sheet's rows, and drop empty rows from
-            the result. Change <code>Data</code> and <code>A2:E1000</code> to your sheet
-            and table range.
+            skipped, so leave spares) and stack each sheet's rows. This version reads each
+            sheet's <strong>last used row from column A</strong> with <code>COUNTA</code>,
+            so it pulls only rows that actually have data — no giant fixed range, no blank
+            padding. Assumes column A is a key with no gaps inside the data. Change
+            <code>Data</code>, the column letter in <code>A:A</code>, and the
+            <code>E</code> (last data column) to fit your table.
+          </p>
+          <div class="note-code-wrap">
+            <button class="note-copy-btn" type="button">Copy</button>
+            <pre class="note-code"><code>=LET(
+  files, $A$1:$A$10,
+  DROP(REDUCE("", files, LAMBDA(acc, f,
+    IF(f="", acc,
+      LET(
+        base, "["&amp;f&amp;"]Data!",
+        last, COUNTA(INDIRECT(base&amp;"A:A")),
+        IF(last&lt;2, acc, VSTACK(acc, INDIRECT(base&amp;"A2:E"&amp;last)))
+      )))), 1)
+)</code></pre>
+          </div>
+          <p class="note-desc" style="margin-top:14px;">
+            <strong>Variant — fixed range, filter the blanks out.</strong> If column A can
+            have internal blanks (so <code>COUNTA</code> would undercount), pull a generous
+            range instead and drop rows whose first column is empty. Note
+            <code>INDIRECT</code> returns <code>0</code> for referenced blank cells, so the
+            filter tests the first column against both <code>0</code> and <code>""</code>
+            — that's why a plain <code>COUNTA(row)&gt;0</code> filter doesn't work here.
+            Keep the range at a few thousand rows (<code>A2:E3000</code>).
           </p>
           <div class="note-code-wrap">
             <button class="note-copy-btn" type="button">Copy</button>
             <pre class="note-code"><code>=LET(
   files, $A$1:$A$10,
   stacked, DROP(REDUCE("", files, LAMBDA(acc, f,
-    IF(f="", acc, VSTACK(acc, INDIRECT("["&amp;f&amp;"]Data!A2:E1000"))))), 1),
-  FILTER(stacked, BYROW(stacked, LAMBDA(r, COUNTA(r)&gt;0)))
+    IF(f="", acc, VSTACK(acc, INDIRECT("["&amp;f&amp;"]Data!A2:E3000"))))), 1),
+  keys, CHOOSECOLS(stacked, 1),
+  FILTER(stacked, (keys&lt;&gt;0)*(keys&lt;&gt;""))
 )</code></pre>
           </div>
         </article>
