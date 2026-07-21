@@ -22,7 +22,7 @@
       </ul>
       <button id="download-btn" class="download-btn" type="button">Export HTML</button>
       <div class="local-badge">Local only</div>
-      <div class="version-label">v1.4.1</div>
+      <div class="version-label">v1.4.2</div>
     </nav>
 
     <main class="content">
@@ -410,6 +410,47 @@
   FILTER(stacked, BYROW(stacked, LAMBDA(r, COUNTA(r)&gt;0)))
 )</code></pre>
           </div>
+        </article>
+
+        <article class="note-card">
+          <h3>Files × a list of <em>possible</em> sheets — skip missing, real rows only</h3>
+          <p class="note-desc">
+            File names in <code>A1:A10</code>, candidate sheet names in <code>B1:B5</code>.
+            For every file it tries each sheet in the list, pulls the ones that exist, and
+            <strong>silently skips any a file doesn't have</strong> — no <code>#REF!</code>
+            errors. The <code>pull</code> helper wraps the existence check in
+            <code>IFERROR</code> (a missing sheet makes <code>INDIRECT</code> return
+            <code>#REF!</code>, which becomes a skip) and uses the last-row-from-column-A
+            trick so only rows with data come through. Change <code>A:A</code> /
+            <code>A2:E</code> to your key column and table width.
+          </p>
+          <div class="note-code-wrap">
+            <button class="note-copy-btn" type="button">Copy</button>
+            <pre class="note-code"><code>=LET(
+  files,  $A$1:$A$10,
+  sheets, $B$1:$B$5,
+  pull, LAMBDA(f, s,
+    LET(
+      base, "["&amp;f&amp;"]"&amp;s&amp;"!",
+      last, IFERROR(COUNTA(INDIRECT(base&amp;"A:A")), 0),
+      IF(last&lt;2, "", INDIRECT(base&amp;"A2:E"&amp;last))
+    )),
+  DROP(
+    REDUCE("", files, LAMBDA(af, f,
+      REDUCE(af, sheets, LAMBDA(a, s,
+        LET(b, pull(f, s),
+          IF(COLUMNS(b)=1, a, VSTACK(a, b))))))),
+    1)
+)</code></pre>
+          </div>
+          <p class="note-desc" style="margin-top:14px;">
+            A sheet is treated as "present" when column A has at least a header plus one
+            row; empty or header-only sheets are skipped too. The skip test
+            <code>COLUMNS(b)=1</code> works because every real block is pulled as
+            <code>A:E</code> (multi-column), while a skip returns a single empty cell — so
+            it holds regardless of how many rows match, as long as your table is more than
+            one column wide.
+          </p>
         </article>
 
         <div class="note-callout">
