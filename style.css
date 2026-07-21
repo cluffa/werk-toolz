@@ -120,16 +120,6 @@ body {
   background: var(--header-bg);
 }
 
-.quote-toggle {
-  margin-left: auto;
-  font-size: 13px;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
-
 .columns-layout {
   display: flex;
   gap: 12px;
@@ -272,6 +262,104 @@ table.sheet td input[type="text"]:focus {
   border-radius: 6px;
   resize: vertical;
   line-height: 1.5;
+}
+
+/* excel function builder */
+.excel-fields {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 720px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field > label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+#excel-input,
+#excel-output {
+  width: 100%;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+#excel-file {
+  width: 100%;
+  max-width: 320px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+#excel-input:focus,
+#excel-output:focus,
+#excel-file:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.excel-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.excel-mode label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.field-hint {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.excel-status {
+  margin: 8px 0 0;
+  font-size: 13px;
+  min-height: 1em;
+}
+
+.excel-status.ok { color: #188038; }
+.excel-status.warn { color: #b06000; }
+
+#excel-copy-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+#excel-copy-btn:hover {
+  background: var(--header-bg);
+}
+
+#excel-copy-btn.copied {
+  border-color: #188038;
+  color: #188038;
 }
 
 @media (max-width: 720px) {

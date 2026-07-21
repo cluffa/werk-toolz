@@ -9,14 +9,15 @@
 <body>
   <div class="app">
     <nav class="sidebar">
-      <h1 class="brand">Werk Toolz</h1>
+      <h1 class="brand">Tools</h1>
       <ul class="tool-list">
         <li><button class="tool-nav-btn active" data-tool="search-string">Search String</button></li>
+        <li><button class="tool-nav-btn" data-tool="excel">Excel Function</button></li>
         <li><button class="tool-nav-btn" data-tool="source">View Source</button></li>
       </ul>
       <button id="download-btn" class="download-btn" type="button">Export HTML</button>
       <div class="local-badge">Local only</div>
-      <div class="version-label">v1.1.1</div>
+      <div class="version-label">v1.2.0</div>
     </nav>
 
     <main class="content">
@@ -32,10 +33,6 @@
 
         <div class="toolbar">
           <button id="clear-rows-btn" type="button" class="secondary">Clear All</button>
-          <label class="quote-toggle">
-            <input type="checkbox" id="quote-toggle" />
-            Wrap each term in quotes
-          </label>
         </div>
 
         <div class="columns-layout">
@@ -68,6 +65,45 @@
             <button id="copy-btn" type="button">Copy</button>
           </div>
           <textarea id="output-string" readonly rows="6" placeholder="Fill in the sheet above to build your search string..."></textarea>
+        </div>
+      </section>
+
+      <section id="tool-excel" class="tool-panel">
+        <header class="tool-header">
+          <h2>Excel Function Builder</h2>
+          <p class="tool-desc">
+            Paste a normal formula and this rewrites every <strong>sheet-qualified</strong>
+            reference (e.g. <code>Sheet1!A1:A10</code>) to point at another <em>open</em>
+            workbook using <code>INDIRECT</code>, so the workbook file name can be supplied by
+            string concatenation. Bare references like <code>A2</code> are left untouched.
+          </p>
+        </header>
+
+        <div class="excel-fields">
+          <div class="field">
+            <label for="excel-input">Formula</label>
+            <textarea id="excel-input" rows="4" spellcheck="false"
+              placeholder="=VLOOKUP(A2, Sheet1!A:B, 2, FALSE)"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="excel-file">Target workbook file name</label>
+            <input type="text" id="excel-file" autocomplete="off" spellcheck="false" placeholder="$A$1" />
+            <div class="excel-mode">
+              <label><input type="radio" name="excel-file-mode" value="cell" checked /> Cell reference (a cell that holds the file name)</label>
+              <label><input type="radio" name="excel-file-mode" value="literal" /> Literal text (type the file name)</label>
+            </div>
+            <p class="field-hint" id="excel-hint"></p>
+          </div>
+        </div>
+
+        <div class="output-section">
+          <div class="output-header">
+            <label for="excel-output">Converted formula</label>
+            <button id="excel-copy-btn" type="button">Copy</button>
+          </div>
+          <textarea id="excel-output" readonly rows="4" placeholder="Your INDIRECT formula appears here..."></textarea>
+          <p class="excel-status" id="excel-status"></p>
         </div>
       </section>
 

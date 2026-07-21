@@ -43,14 +43,12 @@
   const output      = document.getElementById("output-string");
   const copyBtn     = document.getElementById("copy-btn");
   const clearBtn    = document.getElementById("clear-rows-btn");
-  const quoteToggle = document.getElementById("quote-toggle");
 
   function buildOutput() {
-    const wrap = quoteToggle.checked;
     const seen = new Set();
     const terms = [];
     const add = (list) => list.forEach((t) => {
-      if (!seen.has(t)) { seen.add(t); terms.push(wrap ? `"${t}"` : t); }
+      if (!seen.has(t)) { seen.add(t); terms.push(t); }
     });
     cols.personal.forEach((e) => add(tinVariants(e.value, formatPersonal)));
     cols.business.forEach((e) => add(tinVariants(e.value, formatBusiness)));
@@ -135,7 +133,6 @@
   });
 
   clearBtn.addEventListener("click", () => { initCols(); render(); });
-  quoteToggle.addEventListener("change", buildOutput);
 
   copyBtn.addEventListener("click", async () => {
     if (!output.value) return;
@@ -155,6 +152,155 @@
 
   initCols();
   render();
+})();
+
+// Excel function builder: rewrite sheet-qualified references to point at
+// another open workbook via INDIRECT so the file name can be concatenated in.
+(function () {
+  "use strict";
+
+  const input    = document.getElementById("excel-input");
+  if (!input) return;
+  const fileInput = document.getElementById("excel-file");
+  const output    = document.getElementById("excel-output");
+  const status     = document.getElementById("excel-status");
+  const hint       = document.getElementById("excel-hint");
+  const copyBtn    = document.getElementById("excel-copy-btn");
+  const modeRadios = document.querySelectorAll('input[name="excel-file-mode"]');
+
+  // A1, $A$1, A1:B10, A:A, 1:1 (with optional $ anchors).
+  const RANGE = "(?:\\$?[A-Za-z]{1,3}\\$?[0-9]+(?::\\$?[A-Za-z]{1,3}\\$?[0-9]+)?" +
+                "|\\$?[A-Za-z]{1,3}:\\$?[A-Za-z]{1,3}" +
+                "|\\$?[0-9]+:\\$?[0-9]+)";
+  // Sheet1 or 'My Sheet' (apostrophes inside a quoted name are doubled).
+  const SHEET = "(?:'(?:[^']|'')+'|[A-Za-z_][A-Za-z0-9_.]*)";
+  const REF_RE = new RegExp("(" + SHEET + ")!(" + RANGE + ")", "g");
+
+  function currentMode() {
+    let m = "cell";
+    modeRadios.forEach((r) => { if (r.checked) m = r.value; });
+    return m;
+  }
+
+  // Escape a literal for use inside an Excel double-quoted string.
+  function dq(s) { return s.replace(/"/g, '""'); }
+
+  // Split a formula into string-literal and non-string segments so we never
+  // rewrite references that appear inside quoted text.
+  function splitStrings(f) {
+    const parts = [];
+    let cur = "", inStr = false, i = 0;
+    while (i < f.length) {
+      const c = f[i];
+      if (inStr) {
+        if (c === '"') {
+          if (f[i + 1] === '"') { cur += '""'; i += 2; continue; }
+          cur += '"'; parts.push({ t: cur, s: true }); cur = ""; inStr = false; i++;
+        } else { cur += c; i++; }
+      } else if (c === '"') {
+        if (cur) parts.push({ t: cur, s: false });
+        cur = '"'; inStr = true; i++;
+      } else { cur += c; i++; }
+    }
+    if (cur) parts.push({ t: cur, s: inStr });
+    return parts;
+  }
+
+  // Build the INDIRECT() replacement for one sheet-qualified reference.
+  function wrapRef(sheetRaw, rangeRaw, mode, file) {
+    let pre, post;
+    if (sheetRaw[0] === "'") {
+      const inner = sheetRaw.slice(1, -1);
+      pre  = "'[";
+      post = "]" + inner + "'!" + rangeRaw;
+    } else {
+      pre  = "[";
+      post = "]" + sheetRaw + "!" + rangeRaw;
+    }
+    if (mode === "literal") {
+      return 'INDIRECT("' + dq(pre + file + post) + '")';
+    }
+    // Cell-reference mode: concatenate the file name in from the cell.
+    return 'INDIRECT("' + dq(pre) + '"&' + file + '&"' + dq(post) + '")';
+  }
+
+  function updateHint(mode) {
+    if (mode === "cell") {
+      fileInput.placeholder = "$A$1";
+      hint.textContent =
+        "Enter the cell that holds the workbook name (e.g. $A$1). That cell " +
+        "should contain the name as shown in Excel's title bar, e.g. Book1.xlsx. " +
+        "The workbook must be open.";
+    } else {
+      fileInput.placeholder = "Book1.xlsx";
+      hint.textContent =
+        "Type the workbook name exactly as shown in Excel's title bar, " +
+        "e.g. Book1.xlsx. The workbook must be open.";
+    }
+  }
+
+  function convert() {
+    const mode = currentMode();
+    const file = fileInput.value.trim();
+    updateHint(mode);
+
+    if (!input.value.trim()) {
+      output.value = ""; status.textContent = ""; status.className = "excel-status";
+      return;
+    }
+    if (!file) {
+      output.value = "";
+      status.textContent = mode === "cell"
+        ? "Enter the cell that holds the workbook name (e.g. $A$1)."
+        : "Enter the workbook file name (e.g. Book1.xlsx).";
+      status.className = "excel-status warn";
+      return;
+    }
+
+    let f = input.value.trim();
+    const hadEq = f[0] === "=";
+    if (hadEq) f = f.slice(1);
+
+    let count = 0;
+    const rebuilt = splitStrings(f).map((p) => {
+      if (p.s) return p.t;
+      return p.t.replace(REF_RE, (m, sheet, range) => {
+        count++;
+        return wrapRef(sheet, range, mode, file);
+      });
+    }).join("");
+
+    output.value = (hadEq ? "=" : "") + rebuilt;
+    if (count === 0) {
+      status.textContent =
+        "No sheet-qualified references found — nothing to redirect. " +
+        "Add a sheet name like Sheet1!A1.";
+      status.className = "excel-status warn";
+    } else {
+      status.textContent =
+        "Redirected " + count + " reference" + (count === 1 ? "" : "s") +
+        " to the target workbook.";
+      status.className = "excel-status ok";
+    }
+  }
+
+  input.addEventListener("input", convert);
+  fileInput.addEventListener("input", convert);
+  modeRadios.forEach((r) => r.addEventListener("change", convert));
+
+  copyBtn.addEventListener("click", async () => {
+    if (!output.value) return;
+    try { await navigator.clipboard.writeText(output.value); }
+    catch { output.select(); document.execCommand("copy"); }
+    copyBtn.textContent = "Copied!";
+    copyBtn.classList.add("copied");
+    setTimeout(() => {
+      copyBtn.textContent = "Copy";
+      copyBtn.classList.remove("copied");
+    }, 1200);
+  });
+
+  updateHint(currentMode());
 })();
 
 // Nav switching
