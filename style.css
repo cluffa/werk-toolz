@@ -669,6 +669,110 @@ textarea.lk-input {
   }
 }
 
+/* export dropdown */
+.export-wrap {
+  position: relative;
+}
+
+.export-menu {
+  position: absolute;
+  left: 8px;
+  top: calc(100% + 4px);
+  z-index: 20;
+  min-width: 230px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+  padding: 12px;
+}
+
+.export-menu-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.export-tool-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.export-tool-list label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 4px;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 5px;
+  color: var(--text);
+}
+
+.export-tool-list label:hover {
+  background: var(--header-bg);
+}
+
+.export-menu-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.export-mini {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.export-mini:hover {
+  background: var(--header-bg);
+  color: var(--text);
+}
+
+.export-go {
+  padding: 6px 14px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.export-go:hover {
+  background: var(--accent-dark);
+}
+
+.export-go:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.export-menu-hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* single-tool export: no sidebar, content stands alone */
+.app.solo {
+  display: block;
+}
+
+.app.solo .content {
+  margin: 0 auto;
+}
+
 /* download button */
 .download-btn {
   display: block;

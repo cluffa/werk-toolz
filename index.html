@@ -20,9 +20,28 @@
         <li><button class="tool-nav-btn" data-tool="notes">Notes</button></li>
         <li><button class="tool-nav-btn" data-tool="source">View Source</button></li>
       </ul>
-      <button id="download-btn" class="download-btn" type="button">Export HTML</button>
+      <div class="export-wrap">
+        <button id="download-btn" class="download-btn" type="button" aria-haspopup="true" aria-expanded="false">Export HTML ▾</button>
+        <div id="export-menu" class="export-menu" hidden>
+          <p class="export-menu-title">Pick tools to export</p>
+          <ul class="export-tool-list">
+            <li><label><input type="checkbox" class="export-tool" value="search-string" checked /> Search String</label></li>
+            <li><label><input type="checkbox" class="export-tool" value="reconcile" /> Reconcile</label></li>
+            <li><label><input type="checkbox" class="export-tool" value="excel" /> Excel Function</label></li>
+            <li><label><input type="checkbox" class="export-tool" value="lookup" /> Lookup</label></li>
+            <li><label><input type="checkbox" class="export-tool" value="refs" /> References</label></li>
+            <li><label><input type="checkbox" class="export-tool" value="format" /> Format</label></li>
+            <li><label><input type="checkbox" class="export-tool" value="notes" /> Notes</label></li>
+          </ul>
+          <div class="export-menu-actions">
+            <button id="export-select-all" type="button" class="export-mini">Select all</button>
+            <button id="export-go" type="button" class="export-go">Export</button>
+          </div>
+          <p class="export-menu-hint">One tool exports as its own sidebar-free page; pick several to keep the sidebar.</p>
+        </div>
+      </div>
       <div class="local-badge">Local only</div>
-      <div class="version-label">v1.4.2</div>
+      <div class="version-label">v1.5.0</div>
     </nav>
 
     <main class="content">

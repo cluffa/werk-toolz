@@ -1,5 +1,8 @@
+/*<<MOD:search-string>>*/
 (function () {
   "use strict";
+
+  if (!document.getElementById("output-string")) return;
 
   const cols = { personal: [], business: [], number: [] };
   let nextId = 1;
@@ -153,7 +156,9 @@
   initCols();
   render();
 })();
+/*<</MOD:search-string>>*/
 
+/*<<MOD:excelref>>*/
 // Shared Excel reference helpers: detect sheet-qualified references and rewrite
 // them to point at another open workbook via INDIRECT (file name concatenated in).
 var ExcelRef = (function () {
@@ -225,7 +230,9 @@ var ExcelRef = (function () {
 
   return { redirect: redirect, splitStrings: splitStrings };
 })();
+/*<</MOD:excelref>>*/
 
+/*<<MOD:excel>>*/
 // Excel Function tool: redirect a whole formula to another open workbook.
 (function () {
   "use strict";
@@ -315,7 +322,9 @@ var ExcelRef = (function () {
 
   updateHint(currentMode());
 })();
+/*<</MOD:excel>>*/
 
+/*<<MOD:lookup>>*/
 // Lookup Builder: assemble an XLOOKUP / VLOOKUP, optionally redirected to
 // another open workbook via the shared ExcelRef helper.
 (function () {
@@ -394,7 +403,9 @@ var ExcelRef = (function () {
 
   build();
 })();
+/*<</MOD:lookup>>*/
 
+/*<<MOD:refs>>*/
 // Reference Toolkit: column letter/number, $ anchoring, sheet!range builder.
 (function () {
   "use strict";
@@ -481,7 +492,9 @@ var ExcelRef = (function () {
   srSheet.addEventListener("input", buildSheetRef);
   srRange.addEventListener("input", buildSheetRef);
 })();
+/*<</MOD:refs>>*/
 
+/*<<MOD:format>>*/
 // Formula Formatter: pretty-print / minify an Excel formula (string-aware).
 (function () {
   "use strict";
@@ -565,7 +578,9 @@ var ExcelRef = (function () {
     }, 1200);
   });
 })();
+/*<</MOD:format>>*/
 
+/*<<MOD:reconcile>>*/
 // List Reconciliation: compare two line-based lists.
 (function () {
   "use strict";
@@ -642,7 +657,9 @@ var ExcelRef = (function () {
 
   run();
 })();
+/*<</MOD:reconcile>>*/
 
+/*<<MOD:notes>>*/
 // Notes: copy a formula snippet to the clipboard.
 document.querySelectorAll(".note-copy-btn").forEach(function (btn) {
   btn.addEventListener("click", async function () {
@@ -668,7 +685,9 @@ document.querySelectorAll(".note-copy-btn").forEach(function (btn) {
     }, 1200);
   });
 });
+/*<</MOD:notes>>*/
 
+/*<<MOD:nav>>*/
 // Nav switching
 document.querySelectorAll(".tool-nav-btn").forEach(function (btn) {
   btn.addEventListener("click", function () {
@@ -681,7 +700,9 @@ document.querySelectorAll(".tool-nav-btn").forEach(function (btn) {
     });
   });
 });
+/*<</MOD:nav>>*/
 
+/*<<MOD:source>>*/
 // Show / hide source code
 // In single-file mode reads from bundled inline tags; otherwise fetches from server.
 document.querySelectorAll(".show-code-btn").forEach(function (btn) {
@@ -731,71 +752,180 @@ document.querySelectorAll(".show-code-btn").forEach(function (btn) {
     }
   });
 });
+/*<</MOD:source>>*/
 
-// Download as single self-contained HTML file
-document.getElementById("download-btn").addEventListener("click", async function () {
-  const btn = this;
-  btn.textContent = "Building…";
-  btn.disabled = true;
-  try {
-    var html;
-    if (document.documentElement.dataset.singleFile) {
-      html = "<!doctype html>\n" + document.documentElement.outerHTML;
-    } else {
-      const [cssText, jsText] = await Promise.all([
-        fetch("style.css").then((r) => r.text()),
-        fetch("app.js").then((r) => r.text()),
-      ]);
-      // Clone the live DOM and swap the external link/script for inline equivalents.
-      const root = document.documentElement.cloneNode(true);
-      root.setAttribute("data-single-file", "1");
+/*<<MOD:export>>*/
+// Export: build a self-contained HTML file from a chosen set of tools.
+// One tool -> its own sidebar-free page; several -> the sidebar is kept so the
+// pages stay navigable. Only the code each selected tool needs is inlined.
+(function () {
+  "use strict";
 
-      const style = document.createElement("style");
-      style.id = "bundled-style";
-      style.textContent = cssText;
-      root.querySelector('link[rel="stylesheet"]').replaceWith(style);
+  const dlBtn = document.getElementById("download-btn");
+  if (!dlBtn) return;
+  const menu    = document.getElementById("export-menu");
+  const goBtn   = document.getElementById("export-go");
+  const allBtn  = document.getElementById("export-select-all");
 
-      const script = document.createElement("script");
-      script.id = "bundled-script";
-      script.textContent = jsText;
-      root.querySelector('script[src]').replaceWith(script);
+  // Human labels + canonical (sidebar) order for the exportable tools.
+  const TOOL_ORDER = ["search-string", "reconcile", "excel", "lookup", "refs", "format", "notes"];
+  const TOOL_LABELS = {
+    "search-string": "Search String", reconcile: "Reconcile", excel: "Excel Function",
+    lookup: "Lookup", refs: "References", format: "Format", notes: "Notes",
+  };
 
-      // The exported file is standalone — drop the export button entirely.
-      const exportBtn = root.querySelector("#download-btn");
-      if (exportBtn) exportBtn.remove();
+  // Which JS modules each tool needs (ExcelRef is a shared dependency).
+  const TOOL_DEPS = {
+    "search-string": ["search-string"],
+    reconcile: ["reconcile"],
+    excel: ["excelref", "excel"],
+    lookup: ["excelref", "lookup"],
+    refs: ["excelref", "refs"],
+    format: ["format"],
+    notes: ["notes"],
+  };
+  // Emit modules in source order so ExcelRef is defined before its users.
+  const MODULE_ORDER = ["search-string", "excelref", "excel", "lookup", "refs", "format", "reconcile", "notes", "nav"];
 
-      // In single-file mode there are no separate app.js / style.css files
-      // (they're inlined), so keep only the source block for the file itself.
-      root.querySelectorAll(".source-block .show-code-btn").forEach(function (b) {
-        if (b.dataset.file !== "index.html") {
-          const block = b.closest(".source-block");
-          if (block) block.remove();
-        }
+  function boxes() { return Array.from(document.querySelectorAll(".export-tool")); }
+  function selectedTools() {
+    const chosen = boxes().filter((b) => b.checked).map((b) => b.value);
+    return TOOL_ORDER.filter((t) => chosen.includes(t));
+  }
+
+  function extractModule(src, name) {
+    const open = "/*<<MOD:" + name + ">>*/";
+    const close = "/*<</MOD:" + name + ">>*/";
+    const i = src.indexOf(open);
+    const j = src.indexOf(close);
+    if (i === -1 || j === -1) return "";
+    return src.slice(i + open.length, j).trim();
+  }
+
+  // Assemble only the JS the selected tools need. Nav is added for multi-tool
+  // exports; the source viewer and this export module are never included.
+  function buildJs(src, tools, multi) {
+    const needed = new Set();
+    tools.forEach((t) => (TOOL_DEPS[t] || []).forEach((m) => needed.add(m)));
+    if (multi) needed.add("nav");
+    return MODULE_ORDER
+      .filter((m) => needed.has(m))
+      .map((m) => extractModule(src, m))
+      .filter(Boolean)
+      .join("\n\n");
+  }
+
+  function buildHtml(tools, cssText, jsText) {
+    const multi = tools.length > 1;
+    const root = document.documentElement.cloneNode(true);
+    root.removeAttribute("data-single-file");
+
+    // Never ship the export control or the source viewer.
+    const expWrap = root.querySelector(".export-wrap");
+    if (expWrap) expWrap.remove();
+    const srcPanel = root.querySelector("#tool-source");
+    if (srcPanel) srcPanel.remove();
+    const srcNav = root.querySelector('.tool-nav-btn[data-tool="source"]');
+    if (srcNav && srcNav.closest("li")) srcNav.closest("li").remove();
+
+    // Keep only the chosen tool panels; the first one is active.
+    root.querySelectorAll(".tool-panel").forEach(function (p) {
+      const id = p.id.replace(/^tool-/, "");
+      if (!tools.includes(id)) { p.remove(); return; }
+      p.classList.toggle("active", id === tools[0]);
+    });
+
+    if (multi) {
+      // Prune the sidebar nav down to the chosen tools.
+      root.querySelectorAll(".tool-nav-btn").forEach(function (btn) {
+        const t = btn.dataset.tool;
+        if (!tools.includes(t)) { if (btn.closest("li")) btn.closest("li").remove(); return; }
+        btn.classList.toggle("active", t === tools[0]);
       });
-      // The lone remaining source IS the exported file — label it as such.
-      const keptName = root.querySelector(".source-block .source-filename");
-      if (keptName) keptName.textContent = "werk-toolz.html";
-
-      html = "<!doctype html>\n" + root.outerHTML;
+    } else {
+      // Single tool: drop the sidebar entirely.
+      const sidebar = root.querySelector(".sidebar");
+      if (sidebar) sidebar.remove();
+      const app = root.querySelector(".app");
+      if (app) app.classList.add("solo");
     }
+
+    const titleEl = root.querySelector("title");
+    if (titleEl) titleEl.textContent = multi ? "Tools" : (TOOL_LABELS[tools[0]] || "Tool");
+
+    const style = document.createElement("style");
+    style.textContent = cssText;
+    const link = root.querySelector('link[rel="stylesheet"]');
+    if (link) link.replaceWith(style);
+
+    const script = document.createElement("script");
+    script.textContent = buildJs(jsText, tools, multi);
+    const oldScript = root.querySelector("script[src]");
+    if (oldScript) oldScript.replaceWith(script);
+
+    return "<!doctype html>\n" + root.outerHTML;
+  }
+
+  function triggerDownload(html, filename) {
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "werk-toolz.html";
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  } catch (e) {
-    console.error("Download failed:", e);
-    btn.textContent = "Failed";
-    setTimeout(function () {
-      btn.textContent = "Download";
-      btn.disabled = false;
-    }, 2000);
-    return;
   }
-  btn.textContent = "Download";
-  btn.disabled = false;
-});
+
+  // --- Dropdown open/close ---
+  function setOpen(open) {
+    menu.hidden = !open;
+    dlBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+  dlBtn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    setOpen(menu.hidden);
+  });
+  menu.addEventListener("click", function (e) { e.stopPropagation(); });
+  document.addEventListener("click", function () { if (!menu.hidden) setOpen(false); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !menu.hidden) setOpen(false);
+  });
+
+  allBtn.addEventListener("click", function () {
+    const all = boxes();
+    const makeAll = all.some((b) => !b.checked);
+    all.forEach((b) => { b.checked = makeAll; });
+    allBtn.textContent = makeAll ? "Clear all" : "Select all";
+  });
+
+  goBtn.addEventListener("click", async function () {
+    const tools = selectedTools();
+    if (!tools.length) {
+      goBtn.textContent = "Pick one";
+      setTimeout(function () { goBtn.textContent = "Export"; }, 1200);
+      return;
+    }
+    goBtn.textContent = "Building…";
+    goBtn.disabled = true;
+    try {
+      const [cssText, jsText] = await Promise.all([
+        fetch("style.css").then((r) => r.text()),
+        fetch("app.js").then((r) => r.text()),
+      ]);
+      const multi = tools.length > 1;
+      const html = buildHtml(tools, cssText, jsText);
+      triggerDownload(html, multi ? "werk-toolz.html" : "werk-" + tools[0] + ".html");
+      setOpen(false);
+    } catch (e) {
+      console.error("Export failed:", e);
+      goBtn.textContent = "Failed";
+      setTimeout(function () { goBtn.textContent = "Export"; goBtn.disabled = false; }, 2000);
+      return;
+    }
+    goBtn.textContent = "Export";
+    goBtn.disabled = false;
+  });
+})();
+/*<</MOD:export>>*/
