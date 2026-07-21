@@ -154,19 +154,10 @@
   render();
 })();
 
-// Excel function builder: rewrite sheet-qualified references to point at
-// another open workbook via INDIRECT so the file name can be concatenated in.
-(function () {
+// Shared Excel reference helpers: detect sheet-qualified references and rewrite
+// them to point at another open workbook via INDIRECT (file name concatenated in).
+var ExcelRef = (function () {
   "use strict";
-
-  const input    = document.getElementById("excel-input");
-  if (!input) return;
-  const fileInput = document.getElementById("excel-file");
-  const output    = document.getElementById("excel-output");
-  const status     = document.getElementById("excel-status");
-  const hint       = document.getElementById("excel-hint");
-  const copyBtn    = document.getElementById("excel-copy-btn");
-  const modeRadios = document.querySelectorAll('input[name="excel-file-mode"]');
 
   // A1, $A$1, A1:B10, A:A, 1:1 (with optional $ anchors).
   const RANGE = "(?:\\$?[A-Za-z]{1,3}\\$?[0-9]+(?::\\$?[A-Za-z]{1,3}\\$?[0-9]+)?" +
@@ -176,17 +167,11 @@
   const SHEET = "(?:'(?:[^']|'')+'|[A-Za-z_][A-Za-z0-9_.]*)";
   const REF_RE = new RegExp("(" + SHEET + ")!(" + RANGE + ")", "g");
 
-  function currentMode() {
-    let m = "cell";
-    modeRadios.forEach((r) => { if (r.checked) m = r.value; });
-    return m;
-  }
-
   // Escape a literal for use inside an Excel double-quoted string.
   function dq(s) { return s.replace(/"/g, '""'); }
 
-  // Split a formula into string-literal and non-string segments so we never
-  // rewrite references that appear inside quoted text.
+  // Split a formula into string-literal and non-string segments so callers
+  // never rewrite text that appears inside quotes.
   function splitStrings(f) {
     const parts = [];
     let cur = "", inStr = false, i = 0;
@@ -222,6 +207,42 @@
     }
     // Cell-reference mode: concatenate the file name in from the cell.
     return 'INDIRECT("' + dq(pre) + '"&' + file + '&"' + dq(post) + '")';
+  }
+
+  // Rewrite every sheet-qualified reference in a formula fragment.
+  // Returns { out, count }; refs inside quoted strings are untouched.
+  function redirect(text, mode, file) {
+    let count = 0;
+    const out = splitStrings(text).map(function (p) {
+      if (p.s) return p.t;
+      return p.t.replace(REF_RE, function (m, sheet, range) {
+        count++;
+        return wrapRef(sheet, range, mode, file);
+      });
+    }).join("");
+    return { out: out, count: count };
+  }
+
+  return { redirect: redirect, splitStrings: splitStrings };
+})();
+
+// Excel Function tool: redirect a whole formula to another open workbook.
+(function () {
+  "use strict";
+
+  const input     = document.getElementById("excel-input");
+  if (!input) return;
+  const fileInput = document.getElementById("excel-file");
+  const output    = document.getElementById("excel-output");
+  const status    = document.getElementById("excel-status");
+  const hint      = document.getElementById("excel-hint");
+  const copyBtn   = document.getElementById("excel-copy-btn");
+  const modeRadios = document.querySelectorAll('input[name="excel-file-mode"]');
+
+  function currentMode() {
+    let m = "cell";
+    modeRadios.forEach((r) => { if (r.checked) m = r.value; });
+    return m;
   }
 
   function updateHint(mode) {
@@ -261,24 +282,16 @@
     const hadEq = f[0] === "=";
     if (hadEq) f = f.slice(1);
 
-    let count = 0;
-    const rebuilt = splitStrings(f).map((p) => {
-      if (p.s) return p.t;
-      return p.t.replace(REF_RE, (m, sheet, range) => {
-        count++;
-        return wrapRef(sheet, range, mode, file);
-      });
-    }).join("");
-
-    output.value = (hadEq ? "=" : "") + rebuilt;
-    if (count === 0) {
+    const res = ExcelRef.redirect(f, mode, file);
+    output.value = (hadEq ? "=" : "") + res.out;
+    if (res.count === 0) {
       status.textContent =
         "No sheet-qualified references found — nothing to redirect. " +
         "Add a sheet name like Sheet1!A1.";
       status.className = "excel-status warn";
     } else {
       status.textContent =
-        "Redirected " + count + " reference" + (count === 1 ? "" : "s") +
+        "Redirected " + res.count + " reference" + (res.count === 1 ? "" : "s") +
         " to the target workbook.";
       status.className = "excel-status ok";
     }
@@ -301,6 +314,333 @@
   });
 
   updateHint(currentMode());
+})();
+
+// Lookup Builder: assemble an XLOOKUP / VLOOKUP, optionally redirected to
+// another open workbook via the shared ExcelRef helper.
+(function () {
+  "use strict";
+
+  const out = document.getElementById("lk-output");
+  if (!out) return;
+  const kindRadios = document.querySelectorAll('input[name="lookup-kind"]');
+  const modeRadios = document.querySelectorAll('input[name="lk-file-mode"]');
+  const extBox     = document.getElementById("lk-external");
+  const extOpts    = document.getElementById("lk-external-opts");
+  const fileInput  = document.getElementById("lk-file");
+  const copyBtn    = document.getElementById("lk-copy");
+  const xFields    = document.querySelectorAll(".lk-x");
+  const vFields    = document.querySelectorAll(".lk-v");
+
+  function val(id) { return document.getElementById(id).value.trim(); }
+  function radioVal(list) {
+    let v = null;
+    list.forEach((r) => { if (r.checked) v = r.value; });
+    return v;
+  }
+
+  function redir(ref) {
+    if (!extBox.checked) return ref;
+    const file = fileInput.value.trim();
+    if (!file) return ref;
+    return ExcelRef.redirect(ref, radioVal(modeRadios), file).out;
+  }
+
+  function build() {
+    const kind = radioVal(kindRadios);
+    const isX = kind === "xlookup";
+    xFields.forEach((el) => { el.hidden = !isX; });
+    vFields.forEach((el) => { el.hidden = isX; });
+    extOpts.hidden = !extBox.checked;
+
+    const value = val("lk-value");
+
+    if (isX) {
+      const la = val("lk-lookup-array");
+      const ra = val("lk-return-array");
+      const nf = val("lk-notfound");
+      if (!value || !la || !ra) { out.value = ""; return; }
+      const args = [value, redir(la), redir(ra)];
+      if (nf) args.push(nf);
+      out.value = "=XLOOKUP(" + args.join(", ") + ")";
+    } else {
+      const table = val("lk-table");
+      const col = val("lk-col");
+      const exact = document.getElementById("lk-exact").checked;
+      if (!value || !table || !col) { out.value = ""; return; }
+      out.value = "=VLOOKUP(" + value + ", " + redir(table) + ", " + col +
+                  ", " + (exact ? "FALSE" : "TRUE") + ")";
+    }
+  }
+
+  document.querySelectorAll(
+    "#tool-lookup input[type=text], #tool-lookup input[type=radio], #tool-lookup input[type=checkbox]"
+  ).forEach((el) => {
+    el.addEventListener("input", build);
+    el.addEventListener("change", build);
+  });
+
+  copyBtn.addEventListener("click", async () => {
+    if (!out.value) return;
+    try { await navigator.clipboard.writeText(out.value); }
+    catch { out.select(); document.execCommand("copy"); }
+    copyBtn.textContent = "Copied!";
+    copyBtn.classList.add("copied");
+    setTimeout(() => {
+      copyBtn.textContent = "Copy";
+      copyBtn.classList.remove("copied");
+    }, 1200);
+  });
+
+  build();
+})();
+
+// Reference Toolkit: column letter/number, $ anchoring, sheet!range builder.
+(function () {
+  "use strict";
+
+  const colInput = document.getElementById("col-input");
+  if (!colInput) return;
+
+  // --- Column letter <-> number ---
+  function colToNum(s) {
+    s = s.toUpperCase();
+    let n = 0;
+    for (const ch of s) {
+      if (ch < "A" || ch > "Z") return null;
+      n = n * 26 + (ch.charCodeAt(0) - 64);
+    }
+    return n;
+  }
+  function numToCol(n) {
+    if (!Number.isInteger(n) || n < 1 || n > 16384) return null;
+    let s = "";
+    while (n > 0) {
+      const r = (n - 1) % 26;
+      s = String.fromCharCode(65 + r) + s;
+      n = Math.floor((n - 1) / 26);
+    }
+    return s;
+  }
+  const colResult = document.getElementById("col-result");
+  function updateCol() {
+    const raw = colInput.value.trim();
+    if (!raw) { colResult.textContent = ""; colResult.className = "inline-result"; return; }
+    if (/^[0-9]+$/.test(raw)) {
+      const c = numToCol(parseInt(raw, 10));
+      if (c) { colResult.textContent = "→ column " + c; colResult.className = "inline-result ok"; }
+      else { colResult.textContent = "1–16384 only"; colResult.className = "inline-result warn"; }
+    } else if (/^[A-Za-z]{1,3}$/.test(raw)) {
+      const n = colToNum(raw);
+      if (n && n <= 16384) { colResult.textContent = "→ number " + n; colResult.className = "inline-result ok"; }
+      else { colResult.textContent = "A–XFD only"; colResult.className = "inline-result warn"; }
+    } else {
+      colResult.textContent = "Enter a letter (AA) or number (27)";
+      colResult.className = "inline-result warn";
+    }
+  }
+  colInput.addEventListener("input", updateCol);
+
+  // --- Absolute / relative anchoring ---
+  const anchorInput = document.getElementById("anchor-input");
+  const anchorOutput = document.getElementById("anchor-output");
+  // A cell reference not embedded in a longer identifier or a function call.
+  const CELL_RE = /(?<![A-Za-z0-9_.])(\$?)([A-Za-z]{1,3})(\$?)([0-9]+)(?![A-Za-z0-9_(])/g;
+  function anchor(mode) {
+    const text = anchorInput.value;
+    if (!text.trim()) { anchorOutput.textContent = ""; return; }
+    anchorOutput.textContent = ExcelRef.splitStrings(text).map(function (p) {
+      if (p.s) return p.t;
+      return p.t.replace(CELL_RE, function (m, d1, col, d2, row) {
+        const cd = (mode === "abs" || mode === "col") ? "$" : "";
+        const rd = (mode === "abs" || mode === "row") ? "$" : "";
+        return cd + col + rd + row;
+      });
+    }).join("");
+  }
+  document.querySelectorAll("[data-anchor]").forEach(function (btn) {
+    btn.addEventListener("click", function () { anchor(btn.dataset.anchor); });
+  });
+  anchorInput.addEventListener("input", function () {
+    if (anchorOutput.textContent) anchorOutput.textContent = "";
+  });
+
+  // --- Sheet & range builder ---
+  const srSheet = document.getElementById("sr-sheet");
+  const srRange = document.getElementById("sr-range");
+  const srOutput = document.getElementById("sr-output");
+  function needsQuote(name) { return !/^[A-Za-z_][A-Za-z0-9_.]*$/.test(name); }
+  function buildSheetRef() {
+    const sheet = srSheet.value.trim();
+    const range = srRange.value.trim();
+    if (!range) { srOutput.textContent = ""; return; }
+    if (!sheet) { srOutput.textContent = range; return; }
+    const s = needsQuote(sheet) ? "'" + sheet.replace(/'/g, "''") + "'" : sheet;
+    srOutput.textContent = s + "!" + range;
+  }
+  srSheet.addEventListener("input", buildSheetRef);
+  srRange.addEventListener("input", buildSheetRef);
+})();
+
+// Formula Formatter: pretty-print / minify an Excel formula (string-aware).
+(function () {
+  "use strict";
+
+  const input = document.getElementById("fmt-input");
+  if (!input) return;
+  const output = document.getElementById("fmt-output");
+  const indentSel = document.getElementById("fmt-indent");
+  const copyBtn = document.getElementById("fmt-copy");
+
+  // Copy a quoted string literal verbatim (handles doubled "" escapes),
+  // advancing i past it; returns { s, i }.
+  function readString(f, i) {
+    let s = f[i]; i++;
+    while (i < f.length) {
+      s += f[i];
+      if (f[i] === '"') {
+        if (f[i + 1] === '"') { s += f[i + 1]; i += 2; continue; }
+        i++; break;
+      }
+      i++;
+    }
+    return { s: s, i: i };
+  }
+
+  function unit() {
+    const v = indentSel.value;
+    return v === "tab" ? "\t" : " ".repeat(parseInt(v, 10));
+  }
+
+  function pretty(f) {
+    const pad = unit();
+    let out = "", depth = 0, i = 0;
+    while (i < f.length) {
+      const c = f[i];
+      if (c === '"') { const r = readString(f, i); out += r.s; i = r.i; continue; }
+      if (c === " " || c === "\t" || c === "\n" || c === "\r") { i++; continue; }
+      if (c === "(") { out += "(\n" + pad.repeat(depth + 1); depth++; i++; continue; }
+      if (c === ",") { out = out.replace(/\s+$/, ""); out += ",\n" + pad.repeat(depth); i++; continue; }
+      if (c === ")") {
+        depth = Math.max(0, depth - 1);
+        out = out.replace(/\s+$/, "");
+        out += out.endsWith("(") ? ")" : "\n" + pad.repeat(depth) + ")";
+        i++; continue;
+      }
+      out += c; i++;
+    }
+    return out;
+  }
+
+  function minify(f) {
+    let out = "", i = 0;
+    while (i < f.length) {
+      const c = f[i];
+      if (c === '"') { const r = readString(f, i); out += r.s; i = r.i; continue; }
+      if (c === " " || c === "\t" || c === "\n" || c === "\r") { i++; continue; }
+      out += c; i++;
+    }
+    return out;
+  }
+
+  document.getElementById("fmt-pretty").addEventListener("click", function () {
+    output.value = pretty(input.value.trim());
+  });
+  document.getElementById("fmt-min").addEventListener("click", function () {
+    output.value = minify(input.value.trim());
+  });
+  indentSel.addEventListener("change", function () {
+    if (output.value && output.value.indexOf("\n") !== -1) output.value = pretty(input.value.trim());
+  });
+
+  copyBtn.addEventListener("click", async () => {
+    if (!output.value) return;
+    try { await navigator.clipboard.writeText(output.value); }
+    catch { output.select(); document.execCommand("copy"); }
+    copyBtn.textContent = "Copied!";
+    copyBtn.classList.add("copied");
+    setTimeout(() => {
+      copyBtn.textContent = "Copy";
+      copyBtn.classList.remove("copied");
+    }, 1200);
+  });
+})();
+
+// List Reconciliation: compare two line-based lists.
+(function () {
+  "use strict";
+
+  const a = document.getElementById("recon-a");
+  if (!a) return;
+  const b = document.getElementById("recon-b");
+  const trimBox = document.getElementById("recon-trim");
+  const ciBox = document.getElementById("recon-ci");
+  const blanksBox = document.getElementById("recon-blanks");
+
+  const aOnly = document.getElementById("recon-a-only");
+  const bOnly = document.getElementById("recon-b-only");
+  const both  = document.getElementById("recon-both");
+
+  // Build a Map of normalized key -> first original value seen.
+  function toMap(text) {
+    const map = new Map();
+    let total = 0;
+    text.split(/\r?\n/).forEach(function (line) {
+      const orig = trimBox.checked ? line.trim() : line;
+      if (blanksBox.checked && orig === "") return;
+      total++;
+      const key = ciBox.checked ? orig.toLowerCase() : orig;
+      if (!map.has(key)) map.set(key, orig);
+    });
+    return { map: map, total: total };
+  }
+
+  function setStat(id, total, unique) {
+    document.getElementById(id).textContent =
+      total ? "— " + total + " line" + (total === 1 ? "" : "s") +
+              ", " + unique + " unique" : "";
+  }
+
+  function run() {
+    const A = toMap(a.value);
+    const B = toMap(b.value);
+    const aList = [], bList = [], bothList = [];
+    A.map.forEach(function (orig, key) {
+      if (B.map.has(key)) bothList.push(orig); else aList.push(orig);
+    });
+    B.map.forEach(function (orig, key) {
+      if (!A.map.has(key)) bList.push(orig);
+    });
+
+    aOnly.value = aList.join("\n");
+    bOnly.value = bList.join("\n");
+    both.value = bothList.join("\n");
+    document.getElementById("recon-a-only-count").textContent = aList.length;
+    document.getElementById("recon-b-only-count").textContent = bList.length;
+    document.getElementById("recon-both-count").textContent = bothList.length;
+    setStat("recon-a-stat", A.total, A.map.size);
+    setStat("recon-b-stat", B.total, B.map.size);
+  }
+
+  [a, b].forEach((el) => el.addEventListener("input", run));
+  [trimBox, ciBox, blanksBox].forEach((el) => el.addEventListener("change", run));
+
+  document.querySelectorAll(".recon-copy").forEach(function (btn) {
+    btn.addEventListener("click", async function () {
+      const ta = document.getElementById(btn.dataset.target);
+      if (!ta.value) return;
+      try { await navigator.clipboard.writeText(ta.value); }
+      catch { ta.select(); document.execCommand("copy"); }
+      btn.textContent = "Copied!";
+      btn.classList.add("copied");
+      setTimeout(function () {
+        btn.textContent = "Copy";
+        btn.classList.remove("copied");
+      }, 1200);
+    });
+  });
+
+  run();
 })();
 
 // Notes: copy a formula snippet to the clipboard.

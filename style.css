@@ -13,6 +13,11 @@
   box-sizing: border-box;
 }
 
+/* The hidden attribute must win over author display rules (e.g. .field). */
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -448,7 +453,206 @@ table.sheet td input[type="text"]:focus {
   margin-bottom: 4px;
 }
 
+/* shared: monospace text inputs/areas & compact text inputs */
+.mono {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.lk-input {
+  width: 100%;
+  max-width: 420px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+textarea.lk-input {
+  max-width: 100%;
+  resize: vertical;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.lk-input.narrow { max-width: 160px; }
+
+.lk-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+#lk-copy,
+#fmt-copy {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+#lk-copy:hover,
+#fmt-copy:hover { background: var(--header-bg); }
+
+#lk-copy.copied,
+#fmt-copy.copied { border-color: #188038; color: #188038; }
+
+.excel-mode.single { flex-direction: row; }
+.lookup-kind { flex-direction: row; gap: 18px; }
+
+#lk-external-opts { margin-top: 8px; }
+#lk-external-opts .lk-input { margin-bottom: 8px; }
+
+/* list reconciliation */
+.recon-opts label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.recon-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.recon-inputs textarea {
+  width: 100%;
+  padding: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  resize: vertical;
+}
+
+.recon-inputs textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.field-stat {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.recon-results {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.recon-result textarea {
+  width: 100%;
+  padding: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  resize: vertical;
+  background: #fafbfc;
+}
+
+.recon-result .output-header label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.count-badge {
+  display: inline-block;
+  min-width: 20px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  background: #e8f0fe;
+  border-radius: 20px;
+  padding: 1px 8px;
+}
+
+.recon-copy {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.recon-copy:hover { background: var(--header-bg); color: var(--text); }
+.recon-copy.copied { border-color: #188038; color: #188038; }
+
+/* reference toolkit + formatter controls */
+.inline-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.inline-sep {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.inline-result {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.inline-result.ok { color: #188038; }
+.inline-result.warn { color: #b06000; }
+
+.btn-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+
+.mini-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.mini-btn:hover { background: var(--header-bg); }
+
+.indent-pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 6px;
+}
+
+.indent-pick select {
+  font-size: 12px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
 @media (max-width: 720px) {
+  .recon-inputs,
+  .recon-results {
+    grid-template-columns: 1fr;
+  }
   .app {
     flex-direction: column;
   }

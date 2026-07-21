@@ -12,13 +12,17 @@
       <h1 class="brand">Tools</h1>
       <ul class="tool-list">
         <li><button class="tool-nav-btn active" data-tool="search-string">Search String</button></li>
+        <li><button class="tool-nav-btn" data-tool="reconcile">Reconcile</button></li>
         <li><button class="tool-nav-btn" data-tool="excel">Excel Function</button></li>
+        <li><button class="tool-nav-btn" data-tool="lookup">Lookup</button></li>
+        <li><button class="tool-nav-btn" data-tool="refs">References</button></li>
+        <li><button class="tool-nav-btn" data-tool="format">Format</button></li>
         <li><button class="tool-nav-btn" data-tool="notes">Notes</button></li>
         <li><button class="tool-nav-btn" data-tool="source">View Source</button></li>
       </ul>
       <button id="download-btn" class="download-btn" type="button">Export HTML</button>
       <div class="local-badge">Local only</div>
-      <div class="version-label">v1.3.1</div>
+      <div class="version-label">v1.4.0</div>
     </nav>
 
     <main class="content">
@@ -69,6 +73,57 @@
         </div>
       </section>
 
+      <section id="tool-reconcile" class="tool-panel">
+        <header class="tool-header">
+          <h2>List Reconciliation</h2>
+          <p class="tool-desc">
+            Paste two lists (one item per line) and see what's unique to each and what
+            they share — the digital version of tying out two reports.
+          </p>
+        </header>
+
+        <div class="toolbar recon-opts">
+          <label><input type="checkbox" id="recon-trim" checked /> Trim spaces</label>
+          <label><input type="checkbox" id="recon-ci" /> Ignore case</label>
+          <label><input type="checkbox" id="recon-blanks" checked /> Ignore blank lines</label>
+        </div>
+
+        <div class="recon-inputs">
+          <div class="field">
+            <label for="recon-a">List A <span id="recon-a-stat" class="field-stat"></span></label>
+            <textarea id="recon-a" class="mono" rows="10" spellcheck="false" placeholder="One item per line..."></textarea>
+          </div>
+          <div class="field">
+            <label for="recon-b">List B <span id="recon-b-stat" class="field-stat"></span></label>
+            <textarea id="recon-b" class="mono" rows="10" spellcheck="false" placeholder="One item per line..."></textarea>
+          </div>
+        </div>
+
+        <div class="recon-results">
+          <div class="recon-result">
+            <div class="output-header">
+              <label for="recon-a-only">In A only <span id="recon-a-only-count" class="count-badge">0</span></label>
+              <button class="recon-copy" data-target="recon-a-only" type="button">Copy</button>
+            </div>
+            <textarea id="recon-a-only" class="mono" readonly rows="8"></textarea>
+          </div>
+          <div class="recon-result">
+            <div class="output-header">
+              <label for="recon-both">In both <span id="recon-both-count" class="count-badge">0</span></label>
+              <button class="recon-copy" data-target="recon-both" type="button">Copy</button>
+            </div>
+            <textarea id="recon-both" class="mono" readonly rows="8"></textarea>
+          </div>
+          <div class="recon-result">
+            <div class="output-header">
+              <label for="recon-b-only">In B only <span id="recon-b-only-count" class="count-badge">0</span></label>
+              <button class="recon-copy" data-target="recon-b-only" type="button">Copy</button>
+            </div>
+            <textarea id="recon-b-only" class="mono" readonly rows="8"></textarea>
+          </div>
+        </div>
+      </section>
+
       <section id="tool-excel" class="tool-panel">
         <header class="tool-header">
           <h2>Excel Function Builder</h2>
@@ -105,6 +160,161 @@
           </div>
           <textarea id="excel-output" readonly rows="4" placeholder="Your INDIRECT formula appears here..."></textarea>
           <p class="excel-status" id="excel-status"></p>
+        </div>
+      </section>
+
+      <section id="tool-lookup" class="tool-panel">
+        <header class="tool-header">
+          <h2>Lookup Builder</h2>
+          <p class="tool-desc">
+            Build an <code>XLOOKUP</code> or <code>VLOOKUP</code> from its parts.
+            Optionally point the search ranges at another <em>open</em> workbook via
+            <code>INDIRECT</code> (same trick as the Excel Function tool).
+          </p>
+        </header>
+
+        <div class="excel-fields">
+          <div class="excel-mode lookup-kind">
+            <label><input type="radio" name="lookup-kind" value="xlookup" checked /> XLOOKUP</label>
+            <label><input type="radio" name="lookup-kind" value="vlookup" /> VLOOKUP</label>
+          </div>
+
+          <div class="field">
+            <label for="lk-value">Lookup value</label>
+            <input type="text" id="lk-value" class="lk-input" placeholder="A2" spellcheck="false" autocomplete="off" />
+          </div>
+
+          <div class="field lk-x">
+            <label for="lk-lookup-array">Lookup array (where to search)</label>
+            <input type="text" id="lk-lookup-array" class="lk-input" placeholder="Sheet1!A:A" spellcheck="false" autocomplete="off" />
+          </div>
+          <div class="field lk-x">
+            <label for="lk-return-array">Return array (what to return)</label>
+            <input type="text" id="lk-return-array" class="lk-input" placeholder="Sheet1!C:C" spellcheck="false" autocomplete="off" />
+          </div>
+          <div class="field lk-x">
+            <label for="lk-notfound">If not found (optional)</label>
+            <input type="text" id="lk-notfound" class="lk-input" placeholder="&quot;Not found&quot;" spellcheck="false" autocomplete="off" />
+          </div>
+
+          <div class="field lk-v" hidden>
+            <label for="lk-table">Table array</label>
+            <input type="text" id="lk-table" class="lk-input" placeholder="Sheet1!A:C" spellcheck="false" autocomplete="off" />
+          </div>
+          <div class="field lk-v" hidden>
+            <label for="lk-col">Column index (which column to return)</label>
+            <input type="text" id="lk-col" class="lk-input" placeholder="3" spellcheck="false" autocomplete="off" />
+          </div>
+          <div class="field lk-v" hidden>
+            <label class="excel-mode single"><input type="checkbox" id="lk-exact" checked /> Exact match</label>
+          </div>
+
+          <div class="field">
+            <label class="excel-mode single"><input type="checkbox" id="lk-external" /> Look in another open workbook</label>
+            <div id="lk-external-opts" hidden>
+              <input type="text" id="lk-file" class="lk-input" placeholder="$A$1" spellcheck="false" autocomplete="off" />
+              <div class="excel-mode">
+                <label><input type="radio" name="lk-file-mode" value="cell" checked /> Cell reference (holds the file name)</label>
+                <label><input type="radio" name="lk-file-mode" value="literal" /> Literal file name</label>
+              </div>
+              <p class="field-hint">
+                Only sheet-qualified ranges (e.g. <code>Sheet1!A:A</code>) get redirected;
+                the lookup value stays on the current sheet.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="output-section">
+          <div class="output-header">
+            <label for="lk-output">Formula</label>
+            <button id="lk-copy" type="button">Copy</button>
+          </div>
+          <textarea id="lk-output" class="mono" readonly rows="3" placeholder="Fill in the fields above..."></textarea>
+        </div>
+      </section>
+
+      <section id="tool-refs" class="tool-panel">
+        <header class="tool-header">
+          <h2>Reference Toolkit</h2>
+          <p class="tool-desc">Small helpers for wrangling cell and sheet references.</p>
+        </header>
+
+        <article class="note-card">
+          <h3>Column letter ↔ number</h3>
+          <p class="note-desc">Type a column letter (e.g. <code>AA</code>) or a number (e.g. <code>27</code>) — get the other.</p>
+          <div class="inline-field">
+            <input type="text" id="col-input" class="lk-input narrow" placeholder="AA or 27" spellcheck="false" autocomplete="off" />
+            <span id="col-result" class="inline-result"></span>
+          </div>
+        </article>
+
+        <article class="note-card">
+          <h3>Absolute / relative references</h3>
+          <p class="note-desc">
+            Paste a formula or range and re-anchor every cell reference with <code>$</code>.
+            Text inside quotes is left alone.
+          </p>
+          <textarea id="anchor-input" class="lk-input mono" rows="2" spellcheck="false" placeholder="=SUM(A1:B10)"></textarea>
+          <div class="btn-row">
+            <button type="button" class="mini-btn" data-anchor="abs">$A$1 absolute</button>
+            <button type="button" class="mini-btn" data-anchor="rel">A1 relative</button>
+            <button type="button" class="mini-btn" data-anchor="row">A$1 lock row</button>
+            <button type="button" class="mini-btn" data-anchor="col">$A1 lock column</button>
+          </div>
+          <div class="note-code-wrap">
+            <button class="note-copy-btn" type="button">Copy</button>
+            <pre class="note-code"><code id="anchor-output"></code></pre>
+          </div>
+        </article>
+
+        <article class="note-card">
+          <h3>Sheet &amp; range reference</h3>
+          <p class="note-desc">Combine a sheet name and range, quoting the sheet name automatically when it needs it.</p>
+          <div class="inline-field">
+            <input type="text" id="sr-sheet" class="lk-input" placeholder="Sheet name" spellcheck="false" autocomplete="off" />
+            <span class="inline-sep">!</span>
+            <input type="text" id="sr-range" class="lk-input narrow" placeholder="A1:B10" spellcheck="false" autocomplete="off" />
+          </div>
+          <div class="note-code-wrap">
+            <button class="note-copy-btn" type="button">Copy</button>
+            <pre class="note-code"><code id="sr-output"></code></pre>
+          </div>
+        </article>
+      </section>
+
+      <section id="tool-format" class="tool-panel">
+        <header class="tool-header">
+          <h2>Formula Formatter</h2>
+          <p class="tool-desc">
+            Indent a dense formula so you can read it, or collapse a formatted one back to
+            a single line. Everything stays in your browser.
+          </p>
+        </header>
+
+        <div class="field">
+          <label for="fmt-input">Formula</label>
+          <textarea id="fmt-input" class="mono" rows="4" spellcheck="false" placeholder="=IF(A1>0,SUM(Sheet1!B1:B10),0)"></textarea>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="mini-btn" id="fmt-pretty">Format</button>
+          <button type="button" class="mini-btn" id="fmt-min">Minify</button>
+          <label class="field-hint indent-pick">Indent:
+            <select id="fmt-indent">
+              <option value="2">2 spaces</option>
+              <option value="4">4 spaces</option>
+              <option value="tab">Tab</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="output-section">
+          <div class="output-header">
+            <label for="fmt-output">Result</label>
+            <button id="fmt-copy" type="button">Copy</button>
+          </div>
+          <textarea id="fmt-output" class="mono" readonly rows="10" placeholder="Formatted formula appears here..."></textarea>
         </div>
       </section>
 
