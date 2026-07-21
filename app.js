@@ -303,6 +303,32 @@
   updateHint(currentMode());
 })();
 
+// Notes: copy a formula snippet to the clipboard.
+document.querySelectorAll(".note-copy-btn").forEach(function (btn) {
+  btn.addEventListener("click", async function () {
+    var code = btn.parentElement.querySelector("code");
+    if (!code) return;
+    var text = code.textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      var range = document.createRange();
+      range.selectNodeContents(code);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      document.execCommand("copy");
+      sel.removeAllRanges();
+    }
+    btn.textContent = "Copied!";
+    btn.classList.add("copied");
+    setTimeout(function () {
+      btn.textContent = "Copy";
+      btn.classList.remove("copied");
+    }, 1200);
+  });
+});
+
 // Nav switching
 document.querySelectorAll(".tool-nav-btn").forEach(function (btn) {
   btn.addEventListener("click", function () {

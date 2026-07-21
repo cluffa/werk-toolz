@@ -362,6 +362,92 @@ table.sheet td input[type="text"]:focus {
   color: #188038;
 }
 
+/* notes page */
+.note-card {
+  margin-top: 22px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+}
+
+.note-card h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.note-desc {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 680px;
+}
+
+.note-code-wrap {
+  position: relative;
+}
+
+.note-code {
+  margin: 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  background: #f8f9fa;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  tab-size: 2;
+}
+
+.note-code code {
+  white-space: pre;
+  display: block;
+}
+
+.note-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.note-copy-btn:hover {
+  background: #e8eaed;
+  color: var(--text);
+}
+
+.note-copy-btn.copied {
+  border-color: #188038;
+  color: #188038;
+}
+
+.note-callout {
+  margin-top: 22px;
+  padding: 14px 18px;
+  background: var(--header-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.note-callout ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  color: var(--muted);
+}
+
+.note-callout li {
+  margin-bottom: 4px;
+}
+
 @media (max-width: 720px) {
   .app {
     flex-direction: column;

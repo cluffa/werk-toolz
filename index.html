@@ -13,11 +13,12 @@
       <ul class="tool-list">
         <li><button class="tool-nav-btn active" data-tool="search-string">Search String</button></li>
         <li><button class="tool-nav-btn" data-tool="excel">Excel Function</button></li>
+        <li><button class="tool-nav-btn" data-tool="notes">Notes</button></li>
         <li><button class="tool-nav-btn" data-tool="source">View Source</button></li>
       </ul>
       <button id="download-btn" class="download-btn" type="button">Export HTML</button>
       <div class="local-badge">Local only</div>
-      <div class="version-label">v1.2.0</div>
+      <div class="version-label">v1.3.0</div>
     </nav>
 
     <main class="content">
@@ -104,6 +105,85 @@
           </div>
           <textarea id="excel-output" readonly rows="4" placeholder="Your INDIRECT formula appears here..."></textarea>
           <p class="excel-status" id="excel-status"></p>
+        </div>
+      </section>
+
+      <section id="tool-notes" class="tool-panel">
+        <header class="tool-header">
+          <h2>Notes</h2>
+          <p class="tool-desc">
+            Handy formulas and reference snippets. These pair with the Excel Function
+            tool — they use <code>INDIRECT</code> so they read from other <em>open</em>
+            workbooks by file name.
+          </p>
+        </header>
+
+        <article class="note-card">
+          <h3>Concatenate the same sheet from several open workbooks</h3>
+          <p class="note-desc">
+            Stack the table from a shared sheet (here <code>Data</code>) across a fixed
+            list of open workbooks. Put each workbook's file name — exactly as shown in
+            Excel's title bar, e.g. <code>Book1.xlsx</code> — in <code>A1:A3</code>. The
+            <code>A2:E100</code> range is the table body (row 2 down, skipping the header).
+          </p>
+          <div class="note-code-wrap">
+            <button class="note-copy-btn" type="button">Copy</button>
+            <pre class="note-code"><code>=VSTACK(
+  INDIRECT("["&amp;$A$1&amp;"]Data!A2:E100"),
+  INDIRECT("["&amp;$A$2&amp;"]Data!A2:E100"),
+  INDIRECT("["&amp;$A$3&amp;"]Data!A2:E100")
+)</code></pre>
+          </div>
+        </article>
+
+        <article class="note-card">
+          <h3>Same, but over a dynamic list of file names</h3>
+          <p class="note-desc">
+            Loop over however many file names are in <code>A1:A10</code> (blank cells are
+            skipped, so leave spares), stack each sheet's rows, and drop empty rows from
+            the result. Change <code>Data</code> and <code>A2:E1000</code> to your sheet
+            and table range.
+          </p>
+          <div class="note-code-wrap">
+            <button class="note-copy-btn" type="button">Copy</button>
+            <pre class="note-code"><code>=LET(
+  files, $A$1:$A$10,
+  stacked, DROP(REDUCE("", files, LAMBDA(acc, f,
+    IF(f="", acc, VSTACK(acc, INDIRECT("["&amp;f&amp;"]Data!A2:E1000"))))), 1),
+  FILTER(stacked, BYROW(stacked, LAMBDA(r, COUNTA(r)&gt;0)))
+)</code></pre>
+          </div>
+        </article>
+
+        <article class="note-card">
+          <h3>Across a list of files <em>and</em> a list of sheet names</h3>
+          <p class="note-desc">
+            File names in <code>A1:A10</code>, sheet names in <code>B1:B5</code>. For every
+            file it stacks every listed sheet, then stacks all files together and trims
+            blank rows. Handy when each workbook has several sheets to combine.
+          </p>
+          <div class="note-code-wrap">
+            <button class="note-copy-btn" type="button">Copy</button>
+            <pre class="note-code"><code>=LET(
+  files,  $A$1:$A$10,
+  sheets, $B$1:$B$5,
+  block, LAMBDA(f, DROP(REDUCE("", sheets, LAMBDA(b, s,
+    IF(s="", b, VSTACK(b, INDIRECT("["&amp;f&amp;"]"&amp;s&amp;"!A2:E1000"))))), 1)),
+  stacked, DROP(REDUCE("", files, LAMBDA(a, f,
+    IF(f="", a, VSTACK(a, block(f))))), 1),
+  FILTER(stacked, BYROW(stacked, LAMBDA(r, COUNTA(r)&gt;0)))
+)</code></pre>
+          </div>
+        </article>
+
+        <div class="note-callout">
+          <strong>Requirements &amp; tips</strong>
+          <ul>
+            <li>Needs Excel 365 / 2024 (<code>VSTACK</code>, <code>REDUCE</code>, <code>LAMBDA</code>, <code>LET</code>, <code>BYROW</code>).</li>
+            <li>Every source workbook must be <strong>open</strong> — <code>INDIRECT</code> can't read closed files.</li>
+            <li>File names must match the title-bar name, including the extension (<code>.xlsx</code>, <code>.xlsm</code>).</li>
+            <li>All sheets should share the same column layout; start the range at row 2 to skip headers.</li>
+          </ul>
         </div>
       </section>
 
