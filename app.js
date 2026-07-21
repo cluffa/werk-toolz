@@ -420,15 +420,21 @@ document.getElementById("download-btn").addEventListener("click", async function
       script.textContent = jsText;
       root.querySelector('script[src]').replaceWith(script);
 
-      // Replace the export button with a "Get Latest" link back to the live page.
+      // The exported file is standalone — drop the export button entirely.
       const exportBtn = root.querySelector("#download-btn");
-      const latestLink = document.createElement("a");
-      latestLink.href = window.location.href;
-      latestLink.textContent = "Get Latest";
-      latestLink.className = exportBtn.className;
-      latestLink.target = "_blank";
-      latestLink.rel = "noopener";
-      exportBtn.replaceWith(latestLink);
+      if (exportBtn) exportBtn.remove();
+
+      // In single-file mode there are no separate app.js / style.css files
+      // (they're inlined), so keep only the source block for the file itself.
+      root.querySelectorAll(".source-block .show-code-btn").forEach(function (b) {
+        if (b.dataset.file !== "index.html") {
+          const block = b.closest(".source-block");
+          if (block) block.remove();
+        }
+      });
+      // The lone remaining source IS the exported file — label it as such.
+      const keptName = root.querySelector(".source-block .source-filename");
+      if (keptName) keptName.textContent = "werk-toolz.html";
 
       html = "<!doctype html>\n" + root.outerHTML;
     }
