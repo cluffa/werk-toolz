@@ -1,0 +1,17 @@
+# Source list for the offline wheelhouse published at /py.
+# Edit this file, push, and the "Python wheelhouse" workflow rebuilds the zips.
+# Pins are resolved at build time with `uv pip compile` (per platform).
+
+# browser automation
+playwright
+
+# data
+pandas
+numpy
+
+# excel readers / writers
+openpyxl          # .xlsx / .xlsm read + write
+python-calamine   # fast reader used by pandas (engine="calamine")
+xlrd              # legacy .xls
+pyxlsb            # binary .xlsb
+XlsxWriter        # .xlsx writing

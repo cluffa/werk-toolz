@@ -1,0 +1,318 @@
+name: Python wheelhouse
+
+# Builds an offline pip/uv wheelhouse (one .zip per platform) from py/requirements.in
+# and publishes it to the fixed "py-wheelhouse" release, so the download URLs served
+# by /py never change.
+
+on:
+  workflow_dispatch:
+    inputs:
+      include_browsers:
+        description: Bundle the Playwright Chromium browser in the zip
+        type: boolean
+        default: true
+  push:
+    branches: [main]
+    paths:
+      # only these two — no schedule, and no rebuild on unrelated pushes
+      - py/requirements.in
+      - .github/workflows/py-wheelhouse.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: py-wheelhouse
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: '3.12'
+  RELEASE_TAG: py-wheelhouse
+  # workflow_dispatch passes a boolean input; a push passes nothing at all
+  INCLUDE_BROWSERS: ${{ github.event_name != 'workflow_dispatch' && 'true' || inputs.include_browsers }}
+
+jobs:
+  build:
+    name: ${{ matrix.slug }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            slug: windows-x86_64
+          - runner: ubuntu-latest
+            slug: linux-x86_64
+          - runner: macos-latest
+            slug: macos-arm64
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: false
+
+      - name: Resolve pins
+        run: |
+          mkdir -p stage/wheels
+          uv pip compile py/requirements.in \
+            --python-version "$PYTHON_VERSION" \
+            --no-header \
+            -o stage/requirements.txt
+          cat stage/requirements.txt
+
+      - name: Download wheels
+        # uv has no `pip download` yet, so pip fetches the files; uv did the resolving
+        # above and is what the instructions use to install them.
+        run: |
+          python -m pip install --upgrade pip >/dev/null
+          python -m pip download \
+            --requirement stage/requirements.txt \
+            --dest stage/wheels \
+            --only-binary=:all:
+          ls -1 stage/wheels
+
+      - name: Bundle Playwright Chromium
+        if: env.INCLUDE_BROWSERS == 'true'
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/stage/browsers
+        run: |
+          version=$(grep -iE '^playwright==' stage/requirements.txt | head -1 | tr -d '\r')
+          uv tool run --from "$version" playwright install chromium
+
+      - name: Write install instructions
+        env:
+          SLUG: ${{ matrix.slug }}
+        run: |
+          python - <<'PY'
+          import os, pathlib, datetime
+
+          slug = os.environ["SLUG"]
+          py = os.environ["PYTHON_VERSION"]
+          stage = pathlib.Path("stage")
+          windows = slug.startswith("windows")
+          browsers = (stage / "browsers").is_dir()
+          built = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+          pins = [
+              line for line in (stage / "requirements.txt").read_text().splitlines()
+              if line and not line.startswith((" ", "#"))
+          ]
+          wheels = sorted(p.name for p in (stage / "wheels").glob("*"))
+
+          activate = r".venv\Scripts\activate" if windows else "source .venv/bin/activate"
+          browser_env = (
+              "  set PLAYWRIGHT_BROWSERS_PATH=C:\\path\\to\\wheelhouse\\browsers    (this cmd session)\r\n"
+              "  setx PLAYWRIGHT_BROWSERS_PATH C:\\path\\to\\wheelhouse\\browsers   (persist it)\r\n"
+              "  install.ps1 sets both for you." if windows
+              else '  export PLAYWRIGHT_BROWSERS_PATH="$PWD/browsers"   (add it to your shell profile)'
+          )
+          browser_default = (
+              r"%LOCALAPPDATA%\ms-playwright" if windows
+              else "~/Library/Caches/ms-playwright" if slug.startswith("macos")
+              else "~/.cache/ms-playwright"
+          )
+
+          lines = [
+              f"Werk Toolz Python wheelhouse - {slug}, Python {py}",
+              f"Built {built} from {os.environ.get('GITHUB_REPOSITORY', '')} @ {os.environ.get('GITHUB_SHA', '')[:7]}",
+              "",
+              "Everything here installs with no network access. Unzip it anywhere and run one",
+              "of the commands below from inside the unzipped folder.",
+              "",
+              "CONTENTS",
+              "  wheels/            all wheels, including transitive dependencies",
+              "  requirements.txt   the exact pinned set to install",
+              "  install.ps1        one-shot installer (Windows PowerShell)",
+              "  install.sh         one-shot installer (macOS / Linux)",
+          ]
+          if browsers:
+              lines.append("  browsers/          Playwright Chromium bundle")
+          lines += [
+              "",
+              "INSTALL WITH UV (preferred)",
+              f"  uv venv --python {py}",
+              "  uv pip install --no-index --find-links wheels -r requirements.txt",
+              "",
+              "  Into an environment you already have, without a venv:",
+              "  uv pip install --system --no-index --find-links wheels -r requirements.txt",
+              "",
+              "INSTALL WITH PIP",
+              f"  python -m venv .venv",
+              f"  {activate}",
+              "  python -m pip install --no-index --find-links wheels -r requirements.txt",
+              "",
+              "  uv is not part of this bundle. If the machine has no uv and no way to get one,",
+              "  the pip commands above are fully equivalent.",
+              "",
+              "USING THE VENV",
+              f"  {activate}",
+              "  python -c \"import pandas, numpy, openpyxl; print(pandas.__version__)\"",
+              "",
+              "READING EXCEL FILES",
+              "  import pandas as pd",
+              "  pd.read_excel('book.xlsx')                      # openpyxl",
+              "  pd.read_excel('book.xlsx', engine='calamine')   # faster reader",
+              "  pd.read_excel('old.xls')                        # xlrd",
+              "  pd.read_excel('big.xlsb')                       # pyxlsb",
+              "  df.to_excel('out.xlsx', index=False)            # openpyxl / XlsxWriter",
+              "",
+              "PLAYWRIGHT BROWSERS",
+          ]
+          if browsers:
+              lines += [
+                  "  Chromium is bundled in browsers/. Point Playwright at it before use:",
+                  browser_env,
+                  "",
+                  f"  Or copy the contents of browsers/ into {browser_default} to make it the default.",
+                  "  The bundled build matches the pinned Playwright version; upgrading Playwright",
+                  "  later means fetching a matching browser again.",
+              ]
+          else:
+              lines += [
+                  "  No browsers are bundled in this zip. On a machine with network access run:",
+                  "  playwright install chromium",
+                  f"  Browsers land in {browser_default} and can be copied to an offline machine.",
+              ]
+          lines += [
+              "",
+              "PINNED PACKAGES",
+              *(f"  {p}" for p in pins),
+              "",
+              f"WHEELS ({len(wheels)})",
+              *(f"  {w}" for w in wheels),
+              "",
+          ]
+          (stage / "INSTALL.txt").write_text("\r\n".join(lines), encoding="utf-8")
+
+          (stage / "install.ps1").write_text("\r\n".join([
+              "# Creates .venv next to this script and installs the bundled wheels into it.",
+              "$ErrorActionPreference = 'Stop'",
+              "Set-Location -Path $PSScriptRoot",
+              "if (Get-Command uv -ErrorAction SilentlyContinue) {",
+              f"    uv venv --python {py} .venv",
+              "    uv pip install --python .venv --no-index --find-links wheels -r requirements.txt",
+              "} else {",
+              "    python -m venv .venv",
+              "    .\\.venv\\Scripts\\python.exe -m pip install --no-index --find-links wheels -r requirements.txt",
+              "}",
+              *([
+                  "$env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $PSScriptRoot 'browsers'",
+                  "setx PLAYWRIGHT_BROWSERS_PATH $env:PLAYWRIGHT_BROWSERS_PATH | Out-Null",
+                  "Write-Host 'PLAYWRIGHT_BROWSERS_PATH set to' $env:PLAYWRIGHT_BROWSERS_PATH",
+              ] if browsers else []),
+              "Write-Host 'Done. Activate with: .\\.venv\\Scripts\\activate'",
+              "",
+          ]), encoding="utf-8")
+
+          sh = stage / "install.sh"
+          sh.write_text("\n".join([
+              "#!/usr/bin/env bash",
+              "# Creates .venv next to this script and installs the bundled wheels into it.",
+              "set -euo pipefail",
+              'cd "$(dirname "$0")"',
+              "if command -v uv >/dev/null 2>&1; then",
+              f"    uv venv --python {py} .venv",
+              "    uv pip install --python .venv --no-index --find-links wheels -r requirements.txt",
+              "else",
+              "    python3 -m venv .venv",
+              "    ./.venv/bin/python -m pip install --no-index --find-links wheels -r requirements.txt",
+              "fi",
+              *([
+                  'echo "export PLAYWRIGHT_BROWSERS_PATH=\\"$PWD/browsers\\"  # add to your shell profile"',
+              ] if browsers else []),
+              'echo "Done. Activate with: source .venv/bin/activate"',
+              "",
+          ]), encoding="utf-8")
+          sh.chmod(0o755)
+          PY
+          cat stage/INSTALL.txt
+
+      - name: Zip
+        env:
+          SLUG: ${{ matrix.slug }}
+        run: |
+          python - <<'PY'
+          import os, pathlib, zipfile
+
+          slug = os.environ["SLUG"]
+          name = f"werk-toolz-wheelhouse-{slug}-py{os.environ['PYTHON_VERSION'].replace('.', '')}.zip"
+          stage = pathlib.Path("stage")
+          out = pathlib.Path("dist"); out.mkdir(exist_ok=True)
+
+          def add_symlink(z, path, rel):
+              # browser bundles (macOS .app in particular) break if links are flattened
+              info = zipfile.ZipInfo(str(rel).replace(os.sep, "/"))
+              info.create_system = 3
+              info.external_attr = (0o120777 << 16) | 0o20
+              z.writestr(info, os.readlink(path))
+
+          with zipfile.ZipFile(out / name, "w", zipfile.ZIP_DEFLATED) as z:
+              for root, dirs, files in os.walk(stage, followlinks=False):
+                  root = pathlib.Path(root)
+                  for d in sorted(dirs):
+                      if (root / d).is_symlink():
+                          add_symlink(z, root / d, (root / d).relative_to(stage))
+                  dirs[:] = sorted(d for d in dirs if not (root / d).is_symlink())
+                  for f in sorted(files):
+                      path = root / f
+                      rel = path.relative_to(stage)
+                      if path.is_symlink():
+                          add_symlink(z, path, rel)
+                      else:
+                          z.write(path, rel)
+          size = (out / name).stat().st_size / 1e6
+          print(f"{name}: {size:.1f} MB")
+          with open(os.environ["GITHUB_ENV"], "a") as fh:
+              fh.write(f"ZIP_NAME={name}\n")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheelhouse-${{ matrix.slug }}
+          path: dist/${{ env.ZIP_NAME }}
+          retention-days: 7
+          # already compressed
+          compression-level: 0
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Release notes
+        run: |
+          {
+            echo "Offline pip/uv wheelhouse for Python ${PYTHON_VERSION}, rebuilt ${GITHUB_SHA:0:7} on $(date -u '+%Y-%m-%d')."
+            echo
+            echo "Unzip, then \`uv pip install --no-index --find-links wheels -r requirements.txt\`."
+            echo "Full instructions are in \`INSTALL.txt\` inside each zip."
+            echo
+            echo "| download | size |"
+            echo "| --- | --- |"
+            for f in dist/*.zip; do
+              name=$(basename "$f")
+              printf '| [%s](https://github.com/%s/releases/download/%s/%s) | %s |\n' \
+                "$name" "$GITHUB_REPOSITORY" "$RELEASE_TAG" "$name" "$(du -h "$f" | cut -f1)"
+            done
+          } > notes.md
+          cat notes.md
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Python wheelhouse
+          body_path: notes.md
+          files: dist/*.zip
+          make_latest: true

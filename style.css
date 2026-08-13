@@ -649,6 +649,19 @@ textarea.lk-input {
   }
 }
 
+/* sidebar link out to the offline Python wheelhouse */
+.side-link {
+  display: block;
+  margin: 18px 0 0 8px;
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.side-link:hover {
+  color: var(--accent);
+}
+
 /* version label */
 .version-label {
   margin: 6px 0 0 8px;
