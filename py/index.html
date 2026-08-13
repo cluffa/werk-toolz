@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Python Wheelhouse — Werk Toolz</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    .py-page { max-width: 760px; margin: 0 auto; padding: 40px 24px 64px; }
+    .py-page h1 { font-size: 24px; margin: 0 0 6px; }
+    .py-page .lede { color: var(--muted); margin: 0 0 28px; }
+    .dl-primary {
+      display: inline-block; padding: 12px 20px; border-radius: 6px;
+      background: var(--accent); color: #fff; font-size: 15px; font-weight: 600;
+      text-decoration: none;
+    }
+    .dl-primary:hover { background: var(--accent-dark); }
+    .dl-note { color: var(--muted); font-size: 13px; margin: 10px 0 0; }
+    .dl-alt { list-style: none; padding: 0; margin: 14px 0 0; font-size: 13px; }
+    .dl-alt li { margin: 4px 0; }
+    .dl-alt a { color: var(--accent); }
+    .py-page h2 { font-size: 15px; margin: 32px 0 8px; }
+    .py-page pre {
+      background: var(--row-alt); border: 1px solid var(--border); border-radius: 6px;
+      padding: 12px 14px; overflow-x: auto; font-size: 13px; margin: 0 0 10px;
+    }
+    .py-page ul.plain { margin: 0; padding-left: 18px; font-size: 14px; color: var(--text); }
+    .py-page ul.plain li { margin: 3px 0; }
+    .py-page code { background: var(--row-alt); padding: 1px 4px; border-radius: 3px; }
+    .back { font-size: 13px; color: var(--muted); text-decoration: none; }
+    .back:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <div class="py-page">
+    <a class="back" href="../">&larr; Tools</a>
+    <h1>Python Wheelhouse</h1>
+    <p class="lede">
+      Playwright, pandas, numpy and the Excel readers as a single zip of wheels &mdash;
+      installs on a machine with no internet access. Python 3.12.
+    </p>
+
+    <a id="dl" class="dl-primary" href="#">Download for Windows</a>
+    <p class="dl-note">Download starts automatically. If it doesn't, use the button.</p>
+
+    <ul class="dl-alt">
+      <li><a data-dl="windows-x86_64" href="#">Windows (x86-64)</a></li>
+      <li><a data-dl="linux-x86_64" href="#">Linux (x86-64)</a></li>
+      <li><a data-dl="macos-arm64" href="#">macOS (Apple silicon)</a></li>
+    </ul>
+
+    <h2>Install with uv</h2>
+    <pre>uv venv --python 3.12
+uv pip install --no-index --find-links wheels -r requirements.txt</pre>
+
+    <h2>Install with pip</h2>
+    <pre>python -m venv .venv
+.venv\Scripts\activate
+python -m pip install --no-index --find-links wheels -r requirements.txt</pre>
+
+    <h2>What's inside</h2>
+    <ul class="plain">
+      <li><code>wheels/</code> &mdash; every wheel, dependencies included</li>
+      <li><code>requirements.txt</code> &mdash; the pinned set</li>
+      <li><code>INSTALL.txt</code> &mdash; the full instructions</li>
+      <li><code>install.ps1</code> / <code>install.sh</code> &mdash; one-shot installers</li>
+      <li><code>browsers/</code> &mdash; Playwright Chromium, ready for offline use</li>
+    </ul>
+
+    <h2>Packages</h2>
+    <ul class="plain">
+      <li>playwright &mdash; browser automation</li>
+      <li>pandas, numpy</li>
+      <li>openpyxl, python-calamine, xlrd, pyxlsb, XlsxWriter &mdash; Excel read/write</li>
+    </ul>
+  </div>
+
+  <script>
+    (function () {
+      var BASE = 'https://github.com/cluffa/werk-toolz/releases/download/py-wheelhouse/';
+      var file = function (slug) { return BASE + 'werk-toolz-wheelhouse-' + slug + '-py312.zip'; };
+
+      var platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+      var ua = platform + ' ' + navigator.userAgent;
+      var slug = 'windows-x86_64';
+      var label = 'Windows';
+      if (/Mac|iPhone|iPad/i.test(ua)) { slug = 'macos-arm64'; label = 'macOS'; }
+      else if (/Linux|X11/i.test(ua) && !/Windows/i.test(ua)) { slug = 'linux-x86_64'; label = 'Linux'; }
+
+      var primary = document.getElementById('dl');
+      primary.href = file(slug);
+      primary.textContent = 'Download for ' + label;
+
+      document.querySelectorAll('[data-dl]').forEach(function (a) {
+        a.href = file(a.dataset.dl);
+      });
+
+      // kick off the download without navigating away from this page
+      var frame = document.createElement('iframe');
+      frame.style.display = 'none';
+      frame.src = primary.href;
+      setTimeout(function () { document.body.appendChild(frame); }, 400);
+    })();
+  </script>
+</body>
+</html>
