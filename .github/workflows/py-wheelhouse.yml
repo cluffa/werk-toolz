@@ -14,8 +14,9 @@ on:
   push:
     branches: [main]
     paths:
-      # the package list, and nothing else — editing this workflow does not rebuild
+      # only these two — no schedule, and no rebuild on unrelated pushes
       - py/requirements.in
+      - .github/workflows/py-wheelhouse.yml
 
 permissions:
   contents: write
