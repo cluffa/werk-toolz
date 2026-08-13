@@ -26,7 +26,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PYTHON_VERSION: '3.12'
+  PYTHON_VERSION: '3.13'
   RELEASE_TAG: py-wheelhouse
   # workflow_dispatch passes a boolean input; a push passes nothing at all
   INCLUDE_BROWSERS: ${{ github.event_name != 'workflow_dispatch' && 'true' || inputs.include_browsers }}
