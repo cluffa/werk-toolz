@@ -2,9 +2,6 @@
 # Edit this file, push, and the "Python wheelhouse" workflow rebuilds the zips.
 # Pins are resolved at build time with `uv pip compile` (per platform).
 
-# browser automation
-playwright
-
 # data
 pandas
 numpy
