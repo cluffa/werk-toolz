@@ -316,3 +316,18 @@ jobs:
           body_path: notes.md
           files: dist/*.zip
           make_latest: true
+
+      - name: Prune stale assets
+        # asset names carry the Python version, so a version bump leaves the old
+        # zips behind — drop anything this run did not just upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" \
+            --jq '.assets[] | "\(.id) \(.name)"' |
+          while read -r id name; do
+            if [ ! -f "dist/$name" ]; then
+              echo "deleting stale asset $name"
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/assets/$id"
+            fi
+          done
