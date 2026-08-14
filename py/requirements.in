@@ -12,3 +12,6 @@ python-calamine   # fast reader used by pandas (engine="calamine")
 xlrd              # legacy .xls
 pyxlsb            # binary .xlsb
 XlsxWriter        # .xlsx writing
+
+# browser automation
+selenium          # drives an already-installed browser; see INSTALL.txt for the driver
