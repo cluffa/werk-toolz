@@ -15,3 +15,6 @@ XlsxWriter        # .xlsx writing
 
 # browser automation
 selenium          # drives an already-installed browser; see INSTALL.txt for the driver
+
+# gui
+PySimpleGUI       # tkinter wrapper; needs stdlib tkinter, see INSTALL.txt

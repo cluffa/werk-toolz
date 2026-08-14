@@ -93,6 +93,15 @@ jobs:
 
           activate = r".venv\Scripts\activate" if windows else "source .venv/bin/activate"
 
+          # tkinter is stdlib, so no wheel can supply it - whether it is there depends
+          # on how the machine's Python was built
+          if windows:
+              tk_note = "  The python.org and Microsoft Store builds include it, so it is almost always there."
+          elif slug.startswith("macos"):
+              tk_note = "  The python.org builds include it; a Homebrew python needs: brew install python-tk"
+          else:
+              tk_note = "  Debian/Ubuntu need: apt install python3-tk    Fedora: dnf install python3-tkinter"
+
           lines = [
               f"Werk Toolz Python wheelhouse - {slug}, Python {py}",
               f"Built {built} from {os.environ.get('GITHUB_REPOSITORY', '')} @ {os.environ.get('GITHUB_SHA', '')[:7]}",
@@ -147,6 +156,21 @@ jobs:
               "",
               "  On a locked-down Windows box Edge is the safer target: swap chrome/Chrome for",
               "  edge/Edge above and use msedgedriver.exe, which often ships next to Edge itself.",
+              "",
+              "DESKTOP GUI (PYSIMPLEGUI)",
+              "  PySimpleGUI 6 is LGPL3 and needs no license key - the key-and-registration era",
+              "  was version 5. Nothing in it phones home on import.",
+              "",
+              "  It wraps tkinter, which is part of the standard library and so cannot be shipped",
+              "  as a wheel. If `python -c \"import tkinter\"` fails, the bundle cannot fix it:",
+              tk_note,
+              "",
+              "  import PySimpleGUI as sg",
+              "  layout = [[sg.Text('File'), sg.Input(key='-F-'), sg.FileBrowse()],",
+              "            [sg.OK(), sg.Cancel()]]",
+              "  window = sg.Window('Pick a file', layout)",
+              "  event, values = window.read()",
+              "  window.close()",
               "",
               "PINNED PACKAGES",
               *(f"  {p}" for p in pins),
