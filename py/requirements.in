@@ -18,3 +18,8 @@ selenium          # drives an already-installed browser; see INSTALL.txt for the
 
 # gui
 PySimpleGUI       # tkinter wrapper; needs stdlib tkinter, see INSTALL.txt
+
+# pdf
+dxpdf             # .docx -> .pdf, self-contained (Rust/Skia), no Office needed
+img2pdf           # images -> .pdf, lossless
+pdfservices-sdk   # Adobe PDF Services; cloud API, needs creds + network to run
