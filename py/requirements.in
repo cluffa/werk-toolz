@@ -6,6 +6,9 @@
 pandas
 numpy
 
+# plotting
+matplotlib
+
 # jupyter notebooks (VS Code Jupyter extension needs a kernel to run against)
 ipykernel
 
