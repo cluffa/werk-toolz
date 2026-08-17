@@ -6,6 +6,9 @@
 pandas
 numpy
 
+# jupyter notebooks (VS Code Jupyter extension needs a kernel to run against)
+ipykernel
+
 # excel readers / writers
 openpyxl          # .xlsx / .xlsm read + write
 python-calamine   # fast reader used by pandas (engine="calamine")
